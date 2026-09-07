@@ -83,6 +83,24 @@
   .bar { height:7px; background:var(--line); border-radius:4px; overflow:hidden; margin:12px 0 4px; }
   .bar > div { height:100%; background:var(--accent); width:0; transition:width .5s ease; }
   .breakdown { color:var(--muted); font-size:14px; }
+
+  .picker { margin-bottom:22px; }
+  .pickrow { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+  .chip {
+    font:inherit; font-size:14px; padding:7px 15px; border-radius:20px; cursor:pointer;
+    border:1px solid var(--line); background:var(--panel); color:var(--muted);
+  }
+  .chip:hover { border-color:var(--accent); }
+  .chip[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  .poolinfo { font-size:13px; color:var(--muted); }
+  .bankTag {
+    font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted);
+    background:var(--bg); border:1px solid var(--line); padding:2px 7px; border-radius:4px;
+  }
+  .permalink {
+    font-size:13px; color:var(--muted); margin-top:2px; word-break:break-all;
+  }
+  .permalink a { color:var(--accent); }
   [hidden] { display:none !important; }
 </style>
 </head>
@@ -92,10 +110,17 @@
 <header>
   <h1>Hyperparameter Optimization</h1>
   <p class="sub">EN.705.742 Advanced Applied ML &middot; Module 1 &middot; practice quiz</p>
-  <div class="tabs" role="tablist">
-    <button class="tab" role="tab" data-lvl="0" aria-selected="true">Easy</button>
-    <button class="tab" role="tab" data-lvl="1" aria-selected="false">Medium</button>
-    <button class="tab" role="tab" data-lvl="2" aria-selected="false">Hard</button>
+  <div class="picker">
+    <div class="pickrow" id="bankPick"></div>
+    <div class="pickrow">
+      <div class="seg" id="modeSeg">
+        <button data-mode="sample" aria-pressed="true">10 random</button>
+        <button data-mode="all" aria-pressed="false">Everything</button>
+      </div>
+      <span class="poolinfo" id="poolInfo"></span>
+      <button class="act" id="newSet">New draw</button>
+    </div>
+    <div class="permalink" id="permalink"></div>
   </div>
 </header>
 
@@ -104,7 +129,6 @@
 <div class="controls">
   <button class="act primary" id="submit">Submit answers</button>
   <button class="act" id="retry" hidden>Try again</button>
-  <button class="act" id="shuffle">Shuffle</button>
 </div>
 
 <div class="score" id="score" hidden></div>
@@ -183,7 +207,121 @@ const LEVELS = [
     options:["Expected Improvement (EI)","Upper Confidence Bound (UCB)","Probability of Improvement","Mean Squared Error"],
     answer:[0,1,2],
     why:"EI and UCB appear on the slides, with probability of improvement and entropy search added in the lecture. Mean squared error is a loss function, not a rule for choosing where to sample next.",
-    src:"Slides p. 18 &middot; PSO and Bayesian Optimizations transcript &middot; not covered in Raschka" }
+    src:"Slides p. 18 &middot; PSO and Bayesian Optimizations transcript &middot; not covered in Raschka" },
+  { type:"many",
+    q:"Yang and Shami classify hyperparameters into which types?",
+    options:["Continuous","Discrete","Categorical","Stochastic"],
+    answer:[0,1,2],
+    why:"Continuous and discrete hyperparameters usually have bounded domains in practice. The type matters because it decides which search methods can even be applied.",
+    src:"Yang and Shami &sect;2, p. 4" },
+  { type:"one",
+    q:"What is a <em>conditional</em> hyperparameter?",
+    options:[
+      "One that only needs tuning depending on the value of another hyperparameter",
+      "One whose value is a conditional probability",
+      "One tuned on the validation set rather than the training set",
+      "One that changes during training"],
+    answer:[0],
+    why:"In an SVM, the polynomial degree only exists once you have chosen a polynomial kernel. Yang and Shami note this is why some methods, notably TPE, are preferred: they natively preserve these conditional relationships.",
+    src:"Yang and Shami &sect;2, pp. 4 and 13" },
+  { type:"one",
+    q:"Grid search is best described as what?",
+    options:[
+      "An exhaustive brute-force evaluation of the Cartesian product of specified values",
+      "A method that samples configurations at random",
+      "A method that models performance to guide the search",
+      "A method that halves the candidate set at each round"],
+    answer:[0],
+    why:"It evaluates every combination on the grid. Yang and Shami add the limitation: grid search cannot exploit well-performing regions by itself, so narrowing the space has to be done manually between runs.",
+    src:"Slides p. 7 &middot; Yang and Shami &sect;4, p. 9 &middot; Raschka ch. 6, pdf p. 216" },
+  { type:"tf",
+    q:"A convex function has a unique minimum or maximum point.",
+    answer:[0],
+    why:"True. And whether you frame it as minimization or maximization does not matter, since flipping the sign converts one into the other. That is why the notes speak of convex versus non-convex rather than convex versus concave.",
+    src:"Slides p. 16 &middot; Hyperparameter Optimization transcript" },
+  { type:"one",
+    q:"What does momentum do in an optimizer?",
+    options:[
+      "Accelerates convergence by smoothing updates",
+      "Adapts the learning rate separately for each parameter",
+      "Halts training when validation loss stops improving",
+      "Removes the need to compute gradients"],
+    answer:[0],
+    why:"Momentum smooths; AdaGrad, RMSProp and Adam adapt per-parameter rates. The transcript frames both as variations on the same steepest-descent skeleton, one playing with the step direction and the other with the step size.",
+    src:"Slides p. 6 &middot; Hyperparameter Optimization transcript" },
+  { type:"many",
+    q:"Which automated hyperparameter libraries are named in the slides?",
+    options:["Optuna","Hyperopt","scikit-learn GridSearchCV","PyTorch Lightning"],
+    answer:[0,1,2],
+    why:"The first three are listed as libraries used in practice. PyTorch Lightning is a training framework, not a hyperparameter search tool, though Raschka does cover it in chapter 13.",
+    src:"Slides p. 7 &middot; Raschka ch. 13, pdf p. 470" },
+  { type:"tf",
+    q:"Particle swarm optimization requires computing derivatives of the objective function.",
+    answer:[1],
+    why:"False, and it is PSO's main structural advantage. Particles move by comparing costs and sharing results, so flat or non-differentiable regions do not stall them.",
+    src:"Slides p. 15 &middot; PSO and Bayesian Optimizations transcript" },
+  { type:"tf",
+    q:"A Gaussian process is a distribution over functions, meaning any finite set of function values follows a multivariate normal distribution.",
+    answer:[0],
+    why:"True, and that is exactly what makes it usable as a surrogate. It returns a mean prediction <em>and</em> a variance estimate, and the variance is what the acquisition function needs.",
+    src:"PSO and Bayesian Optimizations transcript &middot; Slides p. 18" },
+  { type:"one",
+    q:"What is the purpose of successive halving in hyperparameter search?",
+    options:[
+      "Give every candidate a small budget, then discard the worst half and give survivors more",
+      "Halve the learning rate at each epoch",
+      "Split the dataset in half for cross-validation",
+      "Reduce the search space dimensionality by half"],
+    answer:[0],
+    why:"It is a resource-efficient alternative to spending a full budget on every candidate. Raschka covers it directly; the module slides do not mention it, so this comes from the textbook side of the mapping.",
+    src:"Raschka ch. 6, More resource-efficient hyperparameter search, pdf p. 220 &middot; Yang and Shami &sect;4.4" },
+  { type:"one",
+    q:"In early stopping, which curve provides the signal to stop?",
+    options:["Validation loss","Training loss","The learning rate schedule","The gradient norm"],
+    answer:[0],
+    why:"Training loss keeps falling essentially forever, so it can never tell you to stop. Only the validation curve turns upward, and that turn is the whole signal.",
+    src:"Slides p. 20 &middot; Early Stopping transcript" },
+  { type:"one",
+    q:"If the learning rate is set far too large, what typically happens?",
+    options:[
+      "The loss increases and the run diverges",
+      "The loss decreases more slowly but still converges",
+      "Training becomes deterministic",
+      "The gradient becomes exactly zero"],
+    answer:[0],
+    why:"Each step overshoots the minimum and lands somewhere steeper, so the next step is bigger still. Loss rising while the algorithm does exactly what it was told is the classic signature.",
+    src:"Slides p. 5 &middot; Raschka ch. 2, pdf pp. 68-70" },
+  { type:"one",
+    q:"What do L1 and L2 penalties do in optimization?",
+    options:[
+      "Stabilize solutions by penalizing model complexity",
+      "Increase the learning rate over time",
+      "Guarantee convexity of any loss function",
+      "Replace the need for a validation set"],
+    answer:[0],
+    why:"They are listed on the slides as regularization in optimization. Raschka develops both, and notes the practical difference: L1 produces sparse solutions, driving some weights to exactly zero.",
+    src:"Slides p. 6 &middot; Raschka ch. 4, pdf pp. 153-159" },
+  { type:"tf",
+    q:"Early stopping is useful mainly because it improves generalization; it does not reduce computational cost.",
+    answer:[1],
+    why:"False. It does both, and the transcript stresses the compute saving, calling it \"particularly useful in scenarios where training a model is computationally expensive, such as hyperparameter optimization or large-scale deep learning.\"",
+    src:"Early Stopping transcript &middot; Slides p. 22" },
+  { type:"one",
+    q:"According to the module learning objectives, what are acquisition functions used to balance?",
+    options:["Exploration and exploitation","Bias and variance","Precision and recall","Training time and memory"],
+    answer:[0],
+    why:"Exploration means sampling where the surrogate is uncertain; exploitation means sampling where it predicts good values. The same trade-off appears in PSO as the tension between c&#8321; and c&#8322;.",
+    src:"Slides p. 3 and p. 18" },
+  { type:"one",
+    q:"What does nested cross-validation give you that a single grid search does not?",
+    options:[
+      "An unbiased estimate of the whole tuning procedure's performance",
+      "A faster search",
+      "A guarantee of finding the global optimum",
+      "A way to avoid needing a validation set"],
+    answer:[0],
+    why:"An outer loop scores the entire procedure, tuning included, on data the search never touched. The gap against the inner score is selection bias. This is textbook material rather than slide material.",
+    src:"Raschka ch. 6, Algorithm selection with nested cross-validation, pdf p. 222" }
   ]
 },
 {
@@ -275,7 +413,134 @@ const LEVELS = [
       "Training terminates"],
     answer:[0],
     why:"The four steps are: fit the GP on observed data, maximize the acquisition to pick the next point, evaluate f and update the data, repeat until the budget is exhausted.",
-    src:"Slides p. 19 &middot; not covered in Raschka; the book stops at randomized search and successive halving, pdf p. 218-220" }
+    src:"Slides p. 19 &middot; not covered in Raschka; the book stops at randomized search and successive halving, pdf p. 218-220" },
+  { type:"one",
+    q:"According to Yang and Shami, what is BO-TPE's main advantage over BO-GP?",
+    options:[
+      "Native support for conditional hyperparameters",
+      "It requires no acquisition function",
+      "It is guaranteed to find the global optimum",
+      "It works without any initial samples"],
+    answer:[0],
+    why:"TPE preserves specified conditional relationships, which matters when a hyperparameter only exists depending on another's value. BO-GP, by contrast, works well on small configuration spaces with few continuous parameters.",
+    src:"Yang and Shami &sect;4.3 and &sect;5, p. 13" },
+  { type:"one",
+    q:"SMAC is another name for which method?",
+    options:["Bayesian optimization with a random forest surrogate (BO-RF)","Successive halving","Stochastic gradient descent with momentum","A variant of PSO"],
+    answer:[0],
+    why:"Sequential model-based algorithm configuration. Yang and Shami note it also performs well on conditional hyperparameters, making it a reasonable alternative to TPE.",
+    src:"Yang and Shami &sect;4.3, p. 10 and &sect;5.2, p. 14" },
+  { type:"one",
+    q:"What problem with successive halving does Hyperband address?",
+    options:[
+      "The trade-off between how many configurations to test and how much budget each gets",
+      "That successive halving cannot handle categorical hyperparameters",
+      "That successive halving requires gradients",
+      "That successive halving overfits the validation set"],
+    answer:[0],
+    why:"Hyperband divides the total budget into pieces and dynamically chooses a reasonable number of configurations, with successive halving running as a subroutine. Its computational time is low, but Yang and Shami note it cannot guarantee finding global optima.",
+    src:"Yang and Shami &sect;4.4.2, p. 11 and &sect;7.2, p. 18" },
+  { type:"one",
+    q:"What practical difference does L1 regularization have over L2?",
+    options:[
+      "L1 produces sparse solutions, driving some weights to exactly zero",
+      "L1 always converges faster",
+      "L1 guarantees a convex problem",
+      "L1 cannot be used with gradient descent"],
+    answer:[0],
+    why:"Raschka gives a geometric argument for why the L1 constraint region's corners make exact zeros likely, which is why L1 doubles as a feature-selection method.",
+    src:"Raschka ch. 4, Sparse solutions with L1 regularization, pdf pp. 156-159" },
+  { type:"tf",
+    q:"Grid search can automatically narrow in on well-performing regions of the search space as it proceeds.",
+    answer:[1],
+    why:"False. Yang and Shami are explicit: \"GS cannot exploit the well-performing regions further by itself,\" so narrowing the space and step size between runs has to be done manually. Bayesian methods exist precisely to automate that.",
+    src:"Yang and Shami &sect;4, p. 9" },
+  { type:"one",
+    q:"Why does population initialization matter in GA and PSO?",
+    options:[
+      "A good initial population covers promising regions and speeds convergence",
+      "It determines the number of iterations required exactly",
+      "Without it the algorithms cannot compute gradients",
+      "It fixes the swarm size for the whole run"],
+    answer:[0],
+    why:"Values are improved iteratively, but Yang and Shami note that a suitable initialization can significantly improve both convergence speed and final performance, since it provides the initial guess of the optimal values.",
+    src:"Yang and Shami &sect;4.5, p. 12" },
+  { type:"one",
+    q:"For a large hyperparameter configuration space with many types of hyperparameter, which method do Yang and Shami recommend?",
+    options:["PSO","BO-GP","Grid search","Steepest descent"],
+    answer:[0],
+    why:"PSO supports all hyperparameter types and handles large spaces efficiently, which is why they name it for tree-based and deep-learning models. BO-GP is the recommendation for the opposite case, small spaces with few continuous parameters.",
+    src:"Yang and Shami &sect;5.2.4, p. 14" },
+  { type:"one",
+    q:"What is the key advantage of Adam according to Raschka?",
+    options:[
+      "The update step size is derived from a running average of gradient moments",
+      "It requires no learning rate at all",
+      "It guarantees convergence on nonconvex problems",
+      "It eliminates the need for mini-batches"],
+    answer:[0],
+    why:"Raschka describes Adam as a robust gradient-based method suited to nonconvex problems, inspired by two earlier methods: RMSProp and AdaGrad.",
+    src:"Raschka ch. 14, The Adam optimizer sidebar, pdf p. 510" },
+  { type:"tf",
+    q:"Feature scaling can improve the convergence of gradient descent.",
+    answer:[0],
+    why:"True, and Raschka devotes a section to it. Unscaled features produce elongated loss surfaces where the gradient points sideways rather than at the minimum, so descent zig-zags.",
+    src:"Raschka ch. 2, Improving gradient descent through feature scaling, pdf pp. 74-76" },
+  { type:"one",
+    q:"In the early-stopping algorithm, what happens after training halts?",
+    options:[
+      "The best saved weights are restored",
+      "The final epoch's weights are kept",
+      "The model is retrained from scratch with fewer epochs",
+      "The learning rate is halved and training resumes"],
+    answer:[0],
+    why:"The four steps are monitor validation loss, save best weights, stop after p epochs without improvement, restore best weights. Skipping the restore step wastes the entire mechanism, since you stopped late by design.",
+    src:"Slides p. 22 &middot; Early Stopping transcript" },
+  { type:"tf",
+    q:"The patience parameter exists to avoid stopping prematurely because of noisy fluctuations in the validation curve.",
+    answer:[0],
+    why:"True. Without it a single bad epoch ends the run. Patience is the noise tolerance that lets an online stopping rule survive a real, jittery validation curve.",
+    src:"Slides p. 21 &middot; Early Stopping transcript" },
+  { type:"one",
+    q:"Yang and Shami list several reasons for applying HPO. Which is among them?",
+    options:[
+      "It reduces the human effort developers spend tuning by hand",
+      "It removes the need for a validation set",
+      "It converts non-convex problems into convex ones",
+      "It guarantees reproducible global optima"],
+    answer:[0],
+    why:"Their stated aim is to automate tuning so users can apply ML models to practical problems effectively, particularly for large datasets or complex algorithms where manual tuning consumes considerable time.",
+    src:"Yang and Shami &sect;1, p. 2" },
+  { type:"one",
+    q:"Why is optimizing ROC-based cost preferred over raw accuracy when tuning a detector?",
+    options:[
+      "Evaluation is two-dimensional: probability of detection and probability of false alarm",
+      "Accuracy cannot be computed during cross-validation",
+      "ROC curves are faster to compute",
+      "Accuracy is undefined for imbalanced data"],
+    answer:[0],
+    why:"The transcript makes this the central practical point about cost-function design, and Raschka develops the machinery: precision, recall and ROC curves, plus a section on class imbalance.",
+    src:"PSO and Bayesian Optimizations transcript &middot; Raschka ch. 6, pdf pp. 226-232" },
+  { type:"one",
+    q:"In the Bayesian optimization loop, what does the Gaussian process provide that a plain point estimate cannot?",
+    options:[
+      "A variance estimate alongside the mean prediction",
+      "A guarantee of convexity",
+      "An exact functional form for the objective",
+      "Gradients of the objective"],
+    answer:[0],
+    why:"It is not a deterministic model. Without the variance there is nothing for an acquisition function to trade off against the mean, and exploration becomes impossible.",
+    src:"PSO and Bayesian Optimizations transcript &middot; Slides pp. 17-18" },
+  { type:"one",
+    q:"What stopping criteria does the slide deck give for PSO?",
+    options:[
+      "A maximum number of iterations, or no improvement in gbest over the last K iterations",
+      "Convergence of the gradient norm below a tolerance",
+      "When every particle has visited every region",
+      "When the acquisition function reaches zero"],
+    answer:[0],
+    why:"Since PSO computes no derivatives, a gradient tolerance is not available to it. Note the parallel with Bayesian optimization, which stops on budget exhaustion or on no significant improvement.",
+    src:"Slides p. 14 &middot; Slides p. 19" }
   ]
 },
 {
@@ -366,18 +631,186 @@ const LEVELS = [
       "They can only be trained with derivative-free methods"],
     answer:[0],
     why:"The same property buys the power and the difficulty. The consequence is that global optimization is not guaranteed, so smart architectures and specialized heuristics are needed to speed up convergence.",
-    src:"Hyperparameter Optimization transcript &middot; Raschka ch. 11, About convergence in neural networks, pdf p. 398" }
+    src:"Hyperparameter Optimization transcript &middot; Raschka ch. 11, About convergence in neural networks, pdf p. 398" },
+  { type:"one",
+    q:"Raschka describes Adam as inspired by which two earlier methods?",
+    options:["RMSProp and AdaGrad","Momentum and Nesterov acceleration","SGD and mini-batch GD","Hyperband and BOHB"],
+    answer:[0],
+    why:"He also frames Adam as suited to <em>nonconvex</em> optimization specifically, which is why it dominates deep learning where convexity is unavailable.",
+    src:"Raschka ch. 14, pdf p. 510" },
+  { type:"one",
+    q:"The instructor draws an analogy between stochastic gradient descent and which ensemble method?",
+    options:[
+      "Random forest, which uses a random subset of dimensions per weak learner",
+      "AdaBoost, which reweights misclassified examples",
+      "Voting classifiers, which take a majority vote",
+      "Bagging, which resamples the training set"],
+    answer:[0],
+    why:"The transcript asks you to see it: SGD uses a random subset of the data or dimensions to compute each update, exactly as random forest uses a random subset of dimensions per tree. Both trade exactness per step for speed and robustness.",
+    src:"Hyperparameter Optimization transcript" },
+  { type:"one",
+    q:"In the transcript's framing, what distinguishes Adam from plain steepest descent?",
+    options:[
+      "Adam varies &alpha;, the step size, dynamically and per parameter",
+      "Adam varies the direction rather than the step size",
+      "Adam removes the derivative from the update",
+      "Adam guarantees convergence"],
+    answer:[0],
+    why:"The instructor maps all three variants onto one skeleton: play with &alpha; and you get momentum or Adam; play with the number of dimensions of X and you get stochastic gradient descent. Same algorithm, different knob.",
+    src:"Hyperparameter Optimization transcript" },
+  { type:"tf",
+    q:"Yang and Shami report that a reliable, community-agreed benchmark platform exists for comparing all common HPO algorithms.",
+    answer:[1],
+    why:"False, and they flag it as an open issue. COCO exists for continuous optimizers generally, but there is no equivalent covering hyperparameter optimization methods, which makes published comparisons hard to trust.",
+    src:"Yang and Shami &sect;8, p. 19" },
+  { type:"one",
+    q:"What cost-function trick does the instructor suggest for enforcing a false-alarm constraint?",
+    options:[
+      "Return a very high cost whenever false alarms exceed the threshold",
+      "Remove all false-alarm cases from the training set",
+      "Weight the loss by the inverse class frequency",
+      "Switch from PSO to grid search"],
+    answer:[0],
+    why:"The optimizer then learns never to cross the limit and maximizes detection within it. The transcript ties this to cybersecurity, where the acceptable false-alarm rate is set by the security officer, not by the model.",
+    src:"PSO and Bayesian Optimizations transcript" },
+  { type:"one",
+    q:"How does the transcript contrast acquisition functions with PSO's velocity update?",
+    options:[
+      "Velocity gives roughly equal steps; acquisition functions can jump long distances more intelligently",
+      "Velocity is deterministic; acquisition functions are random",
+      "Velocity requires gradients; acquisition functions do not",
+      "There is no meaningful contrast; they are the same mechanism"],
+    answer:[0],
+    why:"Both answer the same question, where to sample next. The instructor calls the velocity update PSO's acquisition function, then notes acquisition functions sample \"similar to steepest descent but much more intelligent than that.\"",
+    src:"PSO and Bayesian Optimizations transcript" },
+  { type:"tf",
+    q:"Raschka's Adaline example uses mean squared error partly because that loss is convex, which is what makes plain gradient descent sufficient.",
+    answer:[0],
+    why:"True, and he says so directly: the loss is differentiable and \"another nice property of this loss function is that it is convex; thus, we can use a very simple yet powerful optimization algorithm called gradient descent.\" The whole module's difficulty comes from losing that property.",
+    src:"Raschka ch. 2, pdf p. 68" },
+  { type:"one",
+    q:"When the problem is genuinely non-convex, what does the instructor say the only guaranteed approach would be?",
+    options:[
+      "Brute force, which is exponential",
+      "Steepest descent with a small enough learning rate",
+      "Lagrange multipliers",
+      "Increasing the number of training epochs"],
+    answer:[0],
+    why:"He ties it to complexity theory: such problems live under non-deterministic polynomial, so exact solutions are exponential. We use greedy methods anyway \"because we don't have anything else,\" while convex problems may admit deterministic solutions via Lagrange multipliers.",
+    src:"Hyperparameter Optimization transcript" },
+  { type:"tf",
+    q:"Yang and Shami report that metaheuristic algorithms such as GA and PSO support all types of hyperparameter.",
+    answer:[0],
+    why:"True, and it is the reason they recommend PSO for large spaces with mixed types. The cost is complexity: they are more complicated than most other HPO algorithms, though they reach near-optimal solutions efficiently on large configuration spaces.",
+    src:"Yang and Shami &sect;5, p. 13" },
+  { type:"one",
+    q:"Where does the instructor say the derivative implicitly appears in PSO, despite none being computed?",
+    options:[
+      "In how particle directions change according to lbest and gbest",
+      "In the cost function evaluation",
+      "In the random number generator",
+      "Nowhere; PSO has no relationship to gradients"],
+    answer:[0],
+    why:"\"The derivative is here in an indirect manner... the directions are being changed according to my local best and global best.\" The swarm's collective behaviour approximates gradient information without ever computing it.",
+    src:"PSO and Bayesian Optimizations transcript" },
+  { type:"one",
+    q:"The instructor argues that convexity of a hyperparameter optimization problem depends on what?",
+    options:[
+      "Both the loss function and the constraints defining the search space",
+      "The loss function alone",
+      "The number of hyperparameters",
+      "Whether the optimizer is gradient-based"],
+    answer:[0],
+    why:"A convex loss is \"required, but not enough.\" A constraint boundary can render part of the feasible region non-convex even when the loss behaves perfectly. Lasso keeps the problem convex; a deep network with non-linear activations does not.",
+    src:"Hyperparameter Optimization transcript" },
+  { type:"one",
+    q:"In the Secretary Problem analogy, what does the 1/e rule buy you?",
+    options:[
+      "Roughly 63% of the evaluation cost avoided, by observing about 37% before committing",
+      "A guarantee of selecting the best candidate",
+      "A 37% chance of never stopping",
+      "A reduction in variance of the validation estimate"],
+    answer:[0],
+    why:"The instructor is emphatic that the constant is 1/e and not 1/3, and frames the payoff as compute saved: \"If I use 37% rule, I'm saving 63% computation.\" The shared structure with early stopping is deciding when to stop on partial information.",
+    src:"Early Stopping transcript" },
+  { type:"tf",
+    q:"According to the transcript, a Gaussian process surrogate is a deterministic model of the objective function.",
+    answer:[1],
+    why:"False. \"It's not a deterministic model. It provides a mean prediction and a variance estimate,\" which is precisely what enables acquisition-function computation. A deterministic surrogate would leave nothing to explore.",
+    src:"PSO and Bayesian Optimizations transcript" },
+  { type:"one",
+    q:"Why does the instructor say deep neural networks are used despite being non-convex?",
+    options:[
+      "They are universal function approximators, so we compensate with smart architectures and optimization methods",
+      "Their loss functions are convex in practice",
+      "Non-convexity makes them faster to train",
+      "Convex models cannot handle categorical features"],
+    answer:[0],
+    why:"The non-linearity that makes them universal approximators is the same property that destroys convexity. Global optimization is not guaranteed, so specialized heuristics exist to speed up convergence.",
+    src:"Hyperparameter Optimization transcript" },
+  { type:"one",
+    q:"Yang and Shami note that for tree-based models such as XGBoost, several hyperparameters control regularization. Which pair are the L1 and L2 terms on weights?",
+    options:["alpha and lambda","gamma and learning_rate","n_estimators and max_depth","kernel and degree"],
+    answer:[0],
+    why:"They list gamma as the minimum loss reduction for a split, alpha and lambda as the L1 and L2 regularization terms on weights, and learning_rate separately. Knowing which knob does what is the difference between tuning and guessing.",
+    src:"Yang and Shami &sect;3.1, p. 7" }
   ]
 }
 ];
 
+const BANKS = LEVELS;
+
 const form = document.getElementById("quiz");
 const scoreBox = document.getElementById("score");
-const blurb = document.getElementById("blurb");
 const TAG = { one:"one answer", many:"select all", tf:"true / false", fill:"fill in" };
 
-let lvl = 0, order = [], graded = false;
-function qs() { return LEVELS[lvl].questions; }
+let sel = [], mode = "sample", POOL = [], order = [], graded = false;
+
+function readURL() {
+  const q = new URLSearchParams(location.search);
+  const raw = (q.get("m") || q.get("module") || "").trim();
+  if (raw) {
+    sel = raw.split(/[,+ ]+/).map(v => parseInt(v, 10) - 1)
+             .filter(i => Number.isInteger(i) && i >= 0 && i < BANKS.length);
+  }
+  if (!sel.length) sel = [0];
+  mode = q.get("mode") === "all" ? "all" : "sample";
+}
+function syncURL() {
+  const q = new URLSearchParams();
+  q.set("m", sel.map(i => i + 1).join(","));
+  q.set("mode", mode);
+  const url = location.pathname + "?" + q.toString();
+  history.replaceState(null, "", url);
+  document.getElementById("permalink").innerHTML =
+    `Link to this set: <a href="${url}">${location.origin + url}</a>`;
+}
+function drawChips() {
+  document.getElementById("bankPick").innerHTML = BANKS.map((b, i) =>
+    `<button class="chip" data-i="${i}" aria-pressed="${sel.includes(i)}">${b.name.split(" - ")[0]}</button>`
+  ).join("");
+  document.querySelectorAll(".chip").forEach(c => c.onclick = () => {
+    const i = +c.dataset.i;
+    if (sel.includes(i)) { if (sel.length > 1) sel = sel.filter(v => v !== i); }
+    else sel = [...sel, i].sort((a, b) => a - b);
+    drawChips(); build();
+  });
+  document.querySelectorAll("#modeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === mode));
+}
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+function build() {
+  POOL = [];
+  sel.forEach(i => BANKS[i].questions.forEach(q => POOL.push({ ...q, bank: BANKS[i].name })));
+  order = POOL.map((_, i) => i);
+  if (mode === "sample") order = shuffle(order).slice(0, Math.min(10, order.length));
+  syncURL();
+  document.getElementById("poolInfo").textContent =
+    mode === "sample"
+      ? `${order.length} drawn at random from a bank of ${POOL.length}`
+      : `all ${POOL.length} questions`;
+  render();
+}
 
 function render() {
   graded = false;
@@ -385,21 +818,21 @@ function render() {
   document.getElementById("retry").hidden = true;
   document.getElementById("submit").disabled = false;
   document.getElementById("submit2").disabled = false;
-  blurb.textContent = LEVELS[lvl].blurb + " " + qs().length + " questions.";
   form.innerHTML = "";
+  const multi = sel.length > 1;
 
   order.forEach((qi, n) => {
-    const q = qs()[qi];
+    const q = POOL[qi];
     const card = document.createElement("div");
-    card.className = "q";
-    card.dataset.qi = qi;
+    card.className = "q"; card.dataset.qi = qi;
     const head = document.createElement("div");
     head.className = "qhead";
-    head.innerHTML = `<span class="qnum">Question ${n+1}</span><span class="tag">${TAG[q.type]}</span>`;
+    head.innerHTML = `<span class="qnum">Question ${n + 1}</span>` +
+      (multi ? `<span class="bankTag">${q.bank.split(" - ")[0]}</span>` : "") +
+      `<span class="tag">${TAG[q.type]}</span>`;
     card.appendChild(head);
     const text = document.createElement("p");
-    text.className = "qtext";
-    text.innerHTML = q.q;
+    text.className = "qtext"; text.innerHTML = q.q;
     card.appendChild(text);
 
     if (q.type === "fill") {
@@ -407,7 +840,7 @@ function render() {
       inp.type = "text"; inp.placeholder = "your answer"; inp.name = "q" + qi;
       card.appendChild(inp);
     } else {
-      const opts = q.type === "tf" ? ["True","False"] : q.options;
+      const opts = q.type === "tf" ? ["True", "False"] : q.options;
       const kind = q.type === "many" ? "checkbox" : "radio";
       opts.forEach((opt, oi) => {
         const lab = document.createElement("label");
@@ -420,100 +853,77 @@ function render() {
   });
 }
 
-function normalize(s){ return s.toLowerCase().trim().replace(/\s+/g," ").replace(/[.?!]$/,""); }
+function normalize(s) { return s.toLowerCase().trim().replace(/\s+/g, " ").replace(/[.?!]$/, ""); }
 
 function grade() {
   if (graded) return;
   graded = true;
   let correct = 0;
-
   order.forEach(qi => {
-    const q = qs()[qi];
+    const q = POOL[qi];
     const card = form.querySelector(`[data-qi="${qi}"]`);
     let ok = false;
-
     if (q.type === "fill") {
       const inp = card.querySelector("input[type=text]");
       const given = normalize(inp.value);
-      ok = q.answer.some(a => { const n = normalize(a); return given === n || given === n + " parameter"; });
+      ok = q.answer.some(a => { const n = normalize(a);
+        return given === n || given === n + " theory" || given === n + " space" || given === n + " parameter"; });
       inp.disabled = true;
       inp.style.borderColor = ok ? "var(--good)" : "var(--bad)";
-      if (!ok) {
-        const p = document.createElement("p");
-        p.className = "src";
-        p.innerHTML = `Correct answer: <b>${q.answer[0]}</b>`;
-        inp.after(p);
-      }
+      if (!ok) { const p = document.createElement("p"); p.className = "src";
+        p.innerHTML = `Correct answer: <b>${q.answer[0]}</b>`; inp.after(p); }
     } else {
       const picked = [...card.querySelectorAll("input:checked")].map(i => +i.value);
       ok = picked.length === q.answer.length && picked.every(p => q.answer.includes(p));
       card.querySelectorAll("label.opt").forEach(lab => {
         const oi = +lab.dataset.oi;
         lab.querySelector("input").disabled = true;
-        const isAnswer = q.answer.includes(oi), chosen = picked.includes(oi);
-        if (isAnswer) {
-          lab.classList.add("correct");
-          const m = document.createElement("span");
-          m.className = "mark g"; m.textContent = chosen ? "correct" : "correct answer";
-          lab.appendChild(m);
-        } else if (chosen) {
-          lab.classList.add("wrong");
-          const m = document.createElement("span");
-          m.className = "mark b"; m.textContent = "your answer";
-          lab.appendChild(m);
-        }
+        const isAns = q.answer.includes(oi), chosen = picked.includes(oi);
+        if (isAns) { lab.classList.add("correct");
+          const m = document.createElement("span"); m.className = "mark g";
+          m.textContent = chosen ? "correct" : "correct answer"; lab.appendChild(m); }
+        else if (chosen) { lab.classList.add("wrong");
+          const m = document.createElement("span"); m.className = "mark b";
+          m.textContent = "your answer"; lab.appendChild(m); }
       });
     }
     if (ok) correct++;
-
     const why = document.createElement("div");
     why.className = "why";
     why.innerHTML = `<b>${ok ? "Correct" : "Not quite"}</b>${q.why}<div class="src">${q.src}</div>`;
     card.appendChild(why);
   });
 
-  const total = order.length, pct = Math.round(correct/total*100);
+  const total = order.length, pct = Math.round(correct / total * 100);
   scoreBox.hidden = false;
   scoreBox.innerHTML = `
-    <h2>${LEVELS[lvl].name} score</h2>
+    <h2>${sel.map(i => BANKS[i].name.split(" - ")[0]).join(" + ")}</h2>
     <div class="pct">${correct} / ${total} &middot; ${pct}%</div>
     <div class="bar"><div></div></div>
     <div class="breakdown">${
-      pct === 100 ? (lvl < 2 ? "Clean sweep. Move up a level." : "Clean sweep on hard. Nothing left here.")
+      pct === 100 ? "Every one. Draw another set to be sure it wasn't the luck of the shuffle."
       : pct >= 80 ? "Solid. Read back over the ones you missed."
-      : pct >= 50 ? "Worth another pass through the slides and transcripts."
-      : "Start with the slides, then the transcripts, then retry."
+      : pct >= 50 ? "Worth another pass through the notes before the next draw."
+      : "Start with the source material, then come back."
     }</div>`;
   requestAnimationFrame(() => { scoreBox.querySelector(".bar > div").style.width = pct + "%"; });
   document.getElementById("retry").hidden = false;
   document.getElementById("submit").disabled = true;
   document.getElementById("submit2").disabled = true;
-  scoreBox.scrollIntoView({ behavior:"smooth", block:"start" });
+  scoreBox.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function load(l, shuffle) {
-  lvl = l;
-  order = qs().map((_, i) => i);
-  if (shuffle) for (let i = order.length-1; i > 0; i--) {
-    const j = Math.floor(Math.random()*(i+1));
-    [order[i], order[j]] = [order[j], order[i]];
-  }
-  render();
-}
-
-document.querySelectorAll(".tab").forEach(tab => {
-  tab.onclick = () => {
-    document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t === tab));
-    load(+tab.dataset.lvl, false);
-    window.scrollTo({ top:0, behavior:"smooth" });
-  };
-});
 document.getElementById("submit").onclick = grade;
 document.getElementById("submit2").onclick = grade;
-document.getElementById("retry").onclick = () => { load(lvl, false); window.scrollTo({top:0,behavior:"smooth"}); };
-document.getElementById("shuffle").onclick = () => { load(lvl, true); window.scrollTo({top:0,behavior:"smooth"}); };
+document.getElementById("retry").onclick = () => { render(); window.scrollTo({ top: 0, behavior: "smooth" }); };
+document.getElementById("newSet").onclick = () => { build(); window.scrollTo({ top: 0, behavior: "smooth" }); };
+document.getElementById("modeSeg").onclick = e => {
+  const b = e.target.closest("button"); if (!b) return;
+  mode = b.dataset.mode; drawChips(); build();
+};
 
-load(0, false);
+readURL(); drawChips(); build();
+
 </script>
 </body>
 </html>
