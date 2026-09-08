@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Feature Space">
+<meta name="theme-color" content="#2f5d8a" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#17181a" media="(prefers-color-scheme: dark)">
+<title>Feature Space Playground</title>
+<style>
+  :root {
+    --bg:#f7f7f5; --panel:#fff; --ink:#1c1c1a; --muted:#6b6b66; --line:#dedcd6;
+    --accent:#2f5d8a; --accent-soft:#e8f0f7; --warm:#b5651d; --warm-soft:#fbf0e4;
+    --good:#2f6b45; --bad:#8a3232; --grid:#e6e4de;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#17181a; --panel:#202225; --ink:#e8e8e4; --muted:#9b9b95; --line:#34363a;
+      --accent:#7fb0dd; --accent-soft:#23303c; --warm:#e0a45e; --warm-soft:#2f2619;
+      --good:#7fc79a; --bad:#e08b8b; --grid:#2b2d31;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#17181a; --panel:#202225; --ink:#e8e8e4; --muted:#9b9b95; --line:#34363a;
+    --accent:#7fb0dd; --accent-soft:#23303c; --warm:#e0a45e; --warm-soft:#2f2619;
+    --good:#7fc79a; --bad:#e08b8b; --grid:#2b2d31;
+  }
+  * { box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); margin:0; padding:0 20px 90px;
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  .wrap { max-width:820px; margin:0 auto; }
+  header { padding:40px 0 0; }
+  h1 { font-size:26px; margin:0 0 6px; letter-spacing:-0.015em; }
+  .sub { color:var(--muted); font-size:14px; margin:0 0 6px; }
+  .sub a { color:var(--accent); }
+  .tabs { display:flex; gap:4px; border-bottom:1px solid var(--line); margin:18px 0 26px; flex-wrap:wrap; }
+  .tab { font:inherit; font-size:15px; padding:10px 15px; cursor:pointer; background:none;
+    border:none; border-bottom:2px solid transparent; color:var(--muted); margin-bottom:-1px; }
+  .tab[aria-selected="true"] { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
+  h2 { font-size:20px; margin:0 0 14px; letter-spacing:-0.01em; }
+  h3 { font-size:15px; margin:26px 0 10px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:600; }
+  .story { background:var(--warm-soft); border-left:3px solid var(--warm); border-radius:0 10px 10px 0;
+    padding:18px 20px; margin-bottom:22px; }
+  .story .label { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--warm); font-weight:700; margin-bottom:8px; }
+  .story p { margin:0 0 12px; } .story p:last-child { margin:0; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:18px; }
+  canvas { width:100%; display:block; border-radius:6px; }
+  .ctl { display:flex; gap:16px; flex-wrap:wrap; align-items:center; margin-top:14px; }
+  .sl { display:flex; flex-direction:column; gap:2px; min-width:170px; flex:1; }
+  .sl label { font-size:13px; color:var(--muted); display:flex; justify-content:space-between; gap:10px; }
+  .sl label b { color:var(--ink); font-variant-numeric:tabular-nums; }
+  input[type=range] { width:100%; accent-color:var(--accent); }
+  button.act { font:inherit; font-size:14px; padding:8px 15px; border-radius:7px;
+    border:1px solid var(--line); background:var(--bg); color:var(--ink); cursor:pointer; }
+  button.act:hover { border-color:var(--accent); }
+  .seg { display:flex; border:1px solid var(--line); border-radius:7px; overflow:hidden; flex-wrap:wrap; }
+  .seg button { font:inherit; font-size:13px; padding:7px 12px; border:none; background:var(--bg); color:var(--muted); cursor:pointer; }
+  .seg button[aria-pressed="true"] { background:var(--accent); color:#fff; }
+  .readout { font-size:13px; color:var(--muted); margin-top:12px; font-variant-numeric:tabular-nums; }
+  .readout b { color:var(--ink); }
+  .verdict { margin-top:11px; font-size:14px; padding:11px 14px; border-radius:7px; background:var(--accent-soft); }
+  ul.notice { margin:0; padding-left:20px; } ul.notice li { margin-bottom:9px; }
+  .fx { background:var(--accent-soft); border-radius:8px; padding:14px 16px; font-size:14px; margin-top:14px; }
+  .src { color:var(--muted); font-size:13px; margin-top:18px; }
+  @media (max-width: 620px) {
+    body { padding:0 13px 70px; } header { padding:22px 0 0; } h1 { font-size:21px; }
+    .panel { padding:14px; } .tab { padding:9px 11px; font-size:14px; } .sl { min-width:100%; }
+  }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Feature Space Playground</h1>
+  <p class="sub">EN.705.742 Advanced Applied ML &middot; Module 2 &middot; feature selection and extraction</p>
+  <p class="sub"><a href="../quiz/">Practice quiz</a> &middot; <a href="../playground/">Module 1 playground</a></p>
+  <div class="tabs" role="tablist">
+    <button class="tab" data-p="0" aria-selected="true">Convolution</button>
+    <button class="tab" data-p="1" aria-selected="false">PCA vs manifold</button>
+    <button class="tab" data-p="2" aria-selected="false">The bottleneck</button>
+    <button class="tab" data-p="3" aria-selected="false">Sparse coding</button>
+  </div>
+</header>
+
+<!-- ============ CONVOLUTION ============ -->
+<section id="p0">
+  <h2>Convolution</h2>
+  <div class="story">
+    <div class="label">The story</div>
+    <p>You are a very bored border guard with one rubber stamp and a stack of ten thousand documents. The stamp has a pattern cut into it. Your job is to press it against every square inch of every page and write down, each time, <i>how well the ink underneath matched the pattern</i>. High number, strong match. Low number, nothing there. Negative number, you found the exact opposite of your pattern, which is also information.</p>
+    <p>That list of match scores is a <b>feature map</b>. The stamp is a <b>filter</b>. And the reason this beats a dense layer on images is that the stamp does not care <i>where</i> the pattern is. A dense layer has to learn "vertical edge at pixel 412" separately from "vertical edge at pixel 413", as if they were unrelated facts. The guard learns "vertical edge" once and finds it everywhere.</p>
+    <p>Now the twist that makes it deep: the second guard does not stamp the <i>page</i>. She stamps the <b>first guard's notes</b>. She finds patterns in the pattern-matches. A guard stamping "two vertical edges near a horizontal one" is detecting a doorway without anyone ever telling her what a doorway is. Your slides call this learning the simplest Lego pieces first, then combinations of them.</p>
+    <p>Pick a filter below and watch the highlighted window slide. The number it writes is just multiply-and-add, every time.</p>
+  </div>
+
+  <div class="panel">
+    <canvas id="cvC" height="300"></canvas>
+    <div class="ctl">
+      <div class="seg" id="cvK">
+        <button data-k="0" aria-pressed="true">Vertical edge</button>
+        <button data-k="1" aria-pressed="false">Horizontal edge</button>
+        <button data-k="2" aria-pressed="false">Blur</button>
+        <button data-k="3" aria-pressed="false">Sharpen</button>
+      </div>
+      <button class="act" id="cvPlay">Animate</button>
+      <button class="act" id="cvStep">Step</button>
+    </div>
+    <div class="ctl">
+      <div class="sl"><label>Stride <b id="cvSV">1</b></label>
+        <input type="range" id="cvS" min="1" max="4" step="1" value="1"></div>
+      <div class="sl"><label>Padding <b id="cvPV">0</b></label>
+        <input type="range" id="cvP" min="0" max="3" step="1" value="0"></div>
+    </div>
+    <div class="readout" id="cvOut"></div>
+    <div class="verdict" id="cvVerdict"></div>
+  </div>
+
+  <h3>What to try</h3>
+  <ul class="notice">
+    <li>Switch between <b>vertical</b> and <b>horizontal edge</b> on the same image. Same input, same arithmetic, completely different feature map. One filter is one question you are asking the image.</li>
+    <li>Push <b>stride to 3</b>. The output shrinks fast, because you are skipping positions. Cheap, lossy, and the standard way to downsample without a pooling layer.</li>
+    <li>Add <b>padding</b> and watch the output grow back. Padding exists so that border pixels get stamped as often as middle ones, and so that a deep stack does not shrink to nothing.</li>
+    <li>Watch the blur filter's numbers: all positive, all similar. Watch the edge filter: strongly positive on one side of a boundary, strongly negative on the other, near zero in flat regions. <b>Edge filters answer with zero when nothing is happening</b>, which is exactly what makes them useful.</li>
+  </ul>
+  <div class="fx">
+    <b>The output size</b><br>
+    <code>out = &lfloor;(in + 2&middot;padding &minus; kernel) / stride&rfloor; + 1</code><br>
+    Raschka gives this formula its own section, and it is the single most common reason a CNN fails to compile. The readout above computes it live so you can check your intuition against it.
+  </div>
+  <p class="src">Slides pp. 4-6 &middot; Feature Selection and Extraction transcript &middot; Raschka ch. 14, pdf pp. 482-498</p>
+</section>
+
+<!-- ============ PCA VS MANIFOLD ============ -->
+<section id="p1" hidden>
+  <h2>PCA versus the manifold</h2>
+  <div class="story">
+    <div class="label">The story</div>
+    <p>Someone hands you a garden hose coiled loosely on the lawn and asks: how long is it? The honest answer is that the hose is a <b>one-dimensional thing</b>. It has a length and nothing else. It only <i>looks</i> two-dimensional because it happens to be lying in a curve on your lawn. If you picked it up and pulled it straight, you would lose nothing.</p>
+    <p>That is a manifold: something intrinsically low-dimensional, embedded in a higher-dimensional space, curved. Locally, any short piece of hose is just a straight line. Globally it wanders.</p>
+    <p>Now here is what PCA does with your hose. PCA is not allowed to pick it up. PCA can only <b>cast a shadow of it onto a straight ruler</b> and pick the ruler angle that spreads the shadow out the most. For a hose lying nearly straight, that is a great answer. For a coiled hose, the shadow folds over itself: two points on opposite ends of the coil land on top of each other, and PCA reports them as identical.</p>
+    <p>Your lecture puts it flatly: a latent space found by PCA <b>is not a manifold</b>, "because PCA is inherently a linear transformation, while manifolds describe non-linear structures." And the second half matters just as much: a latent space places similar points close together, whereas "PCA doesn't care about similar data points getting together." PCA optimizes variance. It was never asked to preserve neighbourhoods.</p>
+    <p>Toggle the data below from <b>blob</b> to <b>curve</b> and watch the projection collapse.</p>
+  </div>
+
+  <div class="panel">
+    <canvas id="pcC" height="360"></canvas>
+    <div class="ctl">
+      <div class="seg" id="pcM">
+        <button data-m="0" aria-pressed="true">Straight blob</button>
+        <button data-m="1" aria-pressed="false">Curved (a manifold)</button>
+      </div>
+      <button class="act" id="pcNew">Resample</button>
+    </div>
+    <div class="ctl">
+      <div class="sl"><label>Noise <b id="pcNV">0.35</b></label>
+        <input type="range" id="pcN" min="0" max="1.2" step="0.05" value="0.35"></div>
+    </div>
+    <div class="readout" id="pcOut"></div>
+    <div class="verdict" id="pcVerdict"></div>
+  </div>
+
+  <h3>What to try</h3>
+  <ul class="notice">
+    <li>On the <b>blob</b>, PC1 lines up with the data and the 1-D projection keeps neighbours as neighbours. Explained variance is high. This is the case PCA was built for, and it is genuinely excellent at it.</li>
+    <li>Switch to the <b>curve</b>. PC1 still finds the direction of maximum variance, honestly and correctly. Now look at the projection strip underneath: <b>points from opposite ends of the arc land on top of each other.</b> The colour ordering scrambles. That is the shadow folding.</li>
+    <li>The explained-variance number stays respectable even while the structure is being destroyed. <b>A good explained-variance score is not evidence that PCA worked.</b> It only tells you variance was captured, not that neighbourhoods survived.</li>
+    <li>Drop noise to <b>0</b> on the curve. The data is now <i>exactly</i> one-dimensional, a perfect manifold, and PCA still needs two components to represent it. This is the cleanest possible statement of the limitation.</li>
+  </ul>
+  <div class="fx">
+    <b>Why t-SNE, Isomap and LLE exist</b><br>
+    All three give up on global linear structure and preserve <i>local</i> relationships instead. Isomap measures distance <b>along</b> the hose using a neighbour graph and shortest paths rather than straight through the air. That is the whole idea, and it is why the slides group them under manifold learning while PCA sits apart.
+  </div>
+  <p class="src">Slides pp. 10-14 &middot; Feature Selection and Extraction transcript &middot; Raschka ch. 5, pdf pp. 170-200</p>
+</section>
+
+<!-- ============ BOTTLENECK ============ -->
+<section id="p2" hidden>
+  <h2>The bottleneck</h2>
+  <div class="story">
+    <div class="label">The story</div>
+    <p>You are describing a face to a police sketch artist over the phone, and the line charges by the word. You could read out every pixel. You have four words.</p>
+    <p>So you say: "narrow, bearded, glasses, scowling." The artist draws something. It is not the person. But it is <b>recognizably in the right neighbourhood</b>, and it took four words instead of forty thousand.</p>
+    <p>That is the bottleneck. An autoencoder is forced through a narrow channel and has to decide what survives. Give it enough channel and it cheats: it copies the input through and learns nothing, which your slides warn about directly, saying the constraint is what "prevents the network from simply memorizing the input data and forces it to learn generalizable features."</p>
+    <p>Below is a dataset of little synthetic shapes, compressed through a linear bottleneck of adjustable width. Linear, because your slides note the autoencoder with a single linear encoder layer is <b>closely connected to PCA</b>, so this is the honest version of what a bottleneck does before non-linearity is added.</p>
+    <p>And the reason to care beyond compression: once you have a short code, you can <i>make up new codes</i> and decode them. That is generative AI in one sentence. Except a plain autoencoder's code space has holes in it, and decoding a made-up point often lands you in nonsense. That is exactly the problem VAEs exist to fix.</p>
+  </div>
+
+  <div class="panel">
+    <canvas id="bnC" height="330"></canvas>
+    <div class="ctl">
+      <div class="sl"><label>Latent dimensions k <b id="bnKV">4</b></label>
+        <input type="range" id="bnK" min="1" max="24" step="1" value="4"></div>
+      <button class="act" id="bnNew">New shapes</button>
+    </div>
+    <div class="readout" id="bnOut"></div>
+    <div class="verdict" id="bnVerdict"></div>
+  </div>
+
+  <h3>What to try</h3>
+  <ul class="notice">
+    <li>Set <b>k = 1</b>. Every reconstruction looks like the same blurry average, because one number cannot distinguish the shapes. That is a bottleneck that is too tight.</li>
+    <li>Walk k up slowly. There is a point where the shapes snap into recognizability, and it is far below 64. That gap is the compression, and it exists because the data has structure.</li>
+    <li>Push k to <b>24</b>. Reconstructions get near perfect, and the model has learned progressively less. At k = 64 it would be the identity function and would have learned nothing at all.</li>
+    <li>Watch the explained-variance number against the picture. The first few components buy nearly everything; the rest buy polish. That steep curve is <i>why</i> dimensionality reduction works, and it is what the slides mean by retaining the most important information while discarding irrelevant details.</li>
+  </ul>
+  <div class="fx">
+    <b>What a VAE changes</b><br>
+    In a plain autoencoder each latent position is a single number. In a VAE each position is a <b>normal distribution</b>, stored as a mean and a standard deviation, which the transcript notes effectively doubles the stored latent parameters. The KL term then pulls those distributions toward a standard normal, so the code space becomes continuous and well-behaved.<br><br>
+    The consequence is concrete: in a plain autoencoder "small changes in those numerical values will cause big jumps"; with KL minimization, "those changes will be very smooth." That smoothness is what makes sampling a random z and decoding it produce something meaningful.
+  </div>
+  <p class="src">Slides pp. 7-9, 17-21 &middot; Autoencoder Example transcript &middot; Raschka ch. 5 and ch. 17, pdf pp. 170-184 and 621-624</p>
+</section>
+
+<!-- ============ SPARSE CODING ============ -->
+<section id="p3" hidden>
+  <h2>Sparse coding</h2>
+  <div class="story">
+    <div class="label">The story</div>
+    <p>Two people describe the same chord to you.</p>
+    <p>The first says: "it is 0.31 of a C, plus 0.28 of a C sharp, plus 0.19 of a D, plus 0.22 of a D sharp, plus a little of everything else in the octave." Technically complete. Reconstructs the sound exactly. Tells you nothing. This is <b>PCA</b>: a dense mixture where every basis contributes a bit and no single number means anything on its own.</p>
+    <p>The second says: "it is a C and a G." Two atoms out of a possible eighty-eight. That is <b>sparse coding</b>, and notice what you just gained: the representation is not merely smaller, it is <i>nameable</i>. Your lecture pushes this all the way to its conclusion &mdash; with a sparse representation "you don't need a classifier, you will just look at the basis. If it's more than a threshold, that particular label associated to that basis will kick in."</p>
+    <p>Two more things follow. First, you are allowed <b>more atoms than dimensions</b>, which PCA can never do. Lee et al. learn 1,024 basis vectors for 196-pixel patches. An eighty-eight-key piano describing a sound with three keys is overcomplete and that is fine, because you only ever use a few.</p>
+    <p>Second, the price. Finding which few atoms is genuinely hard. The lecture compares it to <b>GAN optimization</b>, where two objectives fight: push reconstruction accuracy and sparsity suffers, push sparsity and accuracy suffers. Worse, the joint problem is not convex &mdash; only each half is &mdash; so two runs can land in different places. "It may not be converging consistently every time the same way."</p>
+    <p>Drag &lambda; below and watch the fight.</p>
+  </div>
+
+  <div class="panel">
+    <canvas id="spC" height="360"></canvas>
+    <div class="ctl">
+      <div class="sl"><label>Sparsity penalty &lambda; <b id="spLV">0.30</b></label>
+        <input type="range" id="spL" min="0" max="1.5" step="0.02" value="0.30"></div>
+      <button class="act" id="spNew">New signal</button>
+    </div>
+    <div class="readout" id="spOut"></div>
+    <div class="verdict" id="spVerdict"></div>
+  </div>
+
+  <h3>What to try</h3>
+  <ul class="notice">
+    <li>Set <b>&lambda; = 0</b>. Reconstruction is near perfect and almost every atom is active. That is least squares with an overcomplete dictionary, and it is useless as a feature: you cannot point at anything.</li>
+    <li>Raise &lambda; slowly. Atoms drop out <b>one at a time, to exactly zero</b>. Not small, not nearly zero &mdash; gone. That hard zero is what the L1 penalty buys and what an L2 penalty would never give you.</li>
+    <li>Push &lambda; past <b>1.0</b>. Everything collapses to zero and the reconstruction is a flat line. The sparsity term has won outright, which is the failure mode at the other end.</li>
+    <li>Find the middle: two or three active atoms with a reconstruction still close to the signal. <b>That is the useful regime</b>, and notice how narrow the good range of &lambda; is. That narrowness is the practical difficulty the paper is written to address.</li>
+  </ul>
+  <div class="fx">
+    <b>Why the L0 norm is not used</b><br>
+    What you actually want is "few nonzeros," which is <code>||a||&#8320;</code>. But counting nonzeros is combinatorial &mdash; checking every subset of atoms &mdash; so it is intractable. <code>||a||&#8321;</code> is the convex relaxation: tractable, and still drives coefficients to exactly zero.<br><br>
+    The slider above runs iterative soft thresholding, which is the simplest algorithm for this problem. Lee et al.'s <b>feature-sign search</b> is a much faster alternative that guesses the signs of the coefficients to reduce each step to an unconstrained quadratic program, and their timings show roughly 2 seconds against 388 for a generic QP solver.
+  </div>
+  <p class="src">Slides pp. 22-26 &middot; Sparse Coding transcript &middot; Lee, Battle, Raina and Ng &middot; not covered in Raschka</p>
+</section>
+
+</div>
+
+<script>
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function fit(c){ const r=window.devicePixelRatio||1,w=c.clientWidth,h=+c.getAttribute("height");
+  c.width=w*r;c.height=h*r;const x=c.getContext("2d");x.setTransform(r,0,0,r,0,0);return {x,w,h}; }
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(o=>o.setAttribute("aria-selected",o===t));
+  [0,1,2,3].forEach(i=>document.getElementById("p"+i).hidden=(+t.dataset.p!==i));
+  drawAll(); window.scrollTo({top:0,behavior:"smooth"});
+});
+
+/* ============ 1. CONVOLUTION ============ */
+const N=14;
+const IMG=(()=>{const a=Array.from({length:N},()=>new Array(N).fill(0.08));
+  for(let r=2;r<12;r++){a[r][4]=0.95;a[r][5]=0.9;}
+  for(let c=4;c<11;c++){a[3][c]=0.9;a[4][c]=0.85;}
+  for(let i=0;i<7;i++){a[5+i][6+Math.floor(i*0.6)]=0.7;}
+  return a;})();
+const KERNELS=[
+ {n:"Vertical edge",k:[[-1,0,1],[-2,0,2],[-1,0,1]]},
+ {n:"Horizontal edge",k:[[-1,-2,-1],[0,0,0],[1,2,1]]},
+ {n:"Blur",k:[[1/9,1/9,1/9],[1/9,1/9,1/9],[1/9,1/9,1/9]]},
+ {n:"Sharpen",k:[[0,-1,0],[-1,5,-1],[0,-1,0]]}];
+const CV={ki:0,pos:0,timer:null};
+function pad(a,p){ if(!p) return a; const m=a.length+2*p;
+  const o=Array.from({length:m},()=>new Array(m).fill(0));
+  for(let r=0;r<a.length;r++)for(let c=0;c<a.length;c++)o[r+p][c+p]=a[r][c];
+  return o; }
+function convAll(){
+  const p=+document.getElementById("cvP").value, s=+document.getElementById("cvS").value;
+  const A=pad(IMG,p), K=KERNELS[CV.ki].k;
+  const out=Math.floor((N+2*p-3)/s)+1;
+  const M=Array.from({length:out},()=>new Array(out).fill(0));
+  for(let r=0;r<out;r++)for(let c=0;c<out;c++){
+    let v=0; for(let i=0;i<3;i++)for(let j=0;j<3;j++) v+=A[r*s+i][c*s+j]*K[i][j];
+    M[r][c]=v; }
+  return {M,out,p,s,A};
+}
+function cvDraw(){
+  const c=document.getElementById("cvC"); if(!c.clientWidth) return;
+  const {x,w,h}=fit(c); x.clearRect(0,0,w,h);
+  const {M,out,p,s,A}=convAll();
+  const An=A.length;
+  const cell=Math.min(15,(w*0.40)/An), left=8, top=34;
+  x.fillStyle=css("--muted"); x.font="12px -apple-system,sans-serif"; x.textAlign="left";
+  x.fillText(`input ${An}x${An}${p?" (padded)":""}`, left, 20);
+  for(let r=0;r<An;r++)for(let cc=0;cc<An;cc++){
+    const v=A[r][cc]; const g=Math.round(255-v*205);
+    x.fillStyle=`rgb(${g},${g},${g})`;
+    x.fillRect(left+cc*cell, top+r*cell, cell-0.6, cell-0.6); }
+  const pr=Math.floor(CV.pos/out), pc=CV.pos%out;
+  x.strokeStyle=css("--warm"); x.lineWidth=2.5;
+  x.strokeRect(left+pc*s*cell-1, top+pr*s*cell-1, 3*cell+1, 3*cell+1);
+
+  const kx=left+An*cell+26, kcell=Math.min(30,(w*0.16)/3);
+  x.fillStyle=css("--muted"); x.fillText("filter 3x3", kx, 20);
+  const K=KERNELS[CV.ki].k;
+  for(let r=0;r<3;r++)for(let cc=0;cc<3;cc++){
+    x.fillStyle=css("--warm-soft"); x.fillRect(kx+cc*kcell,top+r*kcell,kcell-1,kcell-1);
+    x.fillStyle=css("--ink"); x.font="11px -apple-system,sans-serif"; x.textAlign="center";
+    const kv=K[r][cc]; x.fillText(Math.abs(kv)<1?kv.toFixed(2).replace("0.","."):String(kv),
+      kx+cc*kcell+kcell/2, top+r*kcell+kcell/2+4); }
+  x.textAlign="left";
+
+  const ox=kx+3*kcell+26, ocell=Math.min(15,(w-ox-14)/out);
+  let mn=Infinity,mx=-Infinity; M.forEach(row=>row.forEach(v=>{mn=Math.min(mn,v);mx=Math.max(mx,v);}));
+  x.fillStyle=css("--muted"); x.font="12px -apple-system,sans-serif";
+  x.fillText(`feature map ${out}x${out}`, ox, 20);
+  for(let r=0;r<out;r++)for(let cc=0;cc<out;cc++){
+    const t=(M[r][cc]-mn)/((mx-mn)||1);
+    const g=Math.round(255-t*205); x.fillStyle=`rgb(${g},${g},${g})`;
+    x.fillRect(ox+cc*ocell, top+r*ocell, ocell-0.6, ocell-0.6); }
+  x.strokeStyle=css("--warm"); x.lineWidth=2;
+  x.strokeRect(ox+pc*ocell-1, top+pr*ocell-1, ocell+1, ocell+1);
+
+  let dot=0; for(let i=0;i<3;i++)for(let j=0;j<3;j++) dot+=A[pr*s+i][pc*s+j]*K[i][j];
+  document.getElementById("cvOut").innerHTML =
+    `window at row <b>${pr}</b>, col <b>${pc}</b> &nbsp; output value = <b>${dot.toFixed(3)}</b> &nbsp;&middot;&nbsp; ` +
+    `out = &lfloor;(${N} + 2&middot;${p} &minus; 3)/${s}&rfloor; + 1 = <b>${out}</b>`;
+  document.getElementById("cvVerdict").innerHTML =
+    Math.abs(dot)<0.06 ? "Near zero. The patch under the stamp has nothing this filter is looking for."
+    : dot>0 ? "Positive. The patch resembles the filter pattern."
+    : "Negative. The patch is close to the <i>inverse</i> of the filter, which is just as informative.";
+}
+document.getElementById("cvK").onclick=e=>{const b=e.target.closest("button");if(!b)return;
+  CV.ki=+b.dataset.k;[...e.currentTarget.children].forEach(o=>o.setAttribute("aria-pressed",o===b));cvDraw();};
+["cvS","cvP"].forEach(id=>document.getElementById(id).oninput=e=>{
+  document.getElementById(id+"V").textContent=e.target.value; CV.pos=0; cvDraw();});
+document.getElementById("cvStep").onclick=()=>{const {out}=convAll();CV.pos=(CV.pos+1)%(out*out);cvDraw();};
+document.getElementById("cvPlay").onclick=function(){
+  if(CV.timer){clearInterval(CV.timer);CV.timer=null;this.textContent="Animate";return;}
+  this.textContent="Pause";
+  CV.timer=setInterval(()=>{const {out}=convAll();CV.pos=(CV.pos+1)%(out*out);cvDraw();},110);};
+
+/* ============ 2. PCA VS MANIFOLD ============ */
+const PC={mode:0,pts:[],seed:5};
+function rnd(){PC.seed=(PC.seed*1103515245+12345)&0x7fffffff;return PC.seed/0x7fffffff;}
+function gauss(){return (rnd()+rnd()+rnd()+rnd()-2)*1.2;}
+function pcGen(){
+  const n=180, noise=+document.getElementById("pcN").value; PC.pts=[];
+  for(let i=0;i<n;i++){
+    const t=i/(n-1);
+    let px,py;
+    if(PC.mode===0){ const u=(t-0.5)*8; px=u; py=u*0.55; }
+    else { const a=-Math.PI*0.85+t*Math.PI*1.7; px=Math.cos(a)*3.6; py=Math.sin(a)*3.6; }
+    PC.pts.push({x:px+gauss()*noise, y:py+gauss()*noise, t});
+  }
+}
+function pcDraw(){
+  const c=document.getElementById("pcC"); if(!c.clientWidth) return;
+  const {x,w,h}=fit(c); x.clearRect(0,0,w,h);
+  const pad={l:40,r:16,t:16,b:100};
+  const mx=PC.pts.reduce((s,p)=>s+p.x,0)/PC.pts.length;
+  const my=PC.pts.reduce((s,p)=>s+p.y,0)/PC.pts.length;
+  let sxx=0,syy=0,sxy=0;
+  PC.pts.forEach(p=>{const a=p.x-mx,b=p.y-my;sxx+=a*a;syy+=b*b;sxy+=a*b;});
+  const n=PC.pts.length-1; sxx/=n;syy/=n;sxy/=n;
+  const tr=sxx+syy, det=sxx*syy-sxy*sxy;
+  const l1=tr/2+Math.sqrt(Math.max(tr*tr/4-det,0)), l2=tr/2-Math.sqrt(Math.max(tr*tr/4-det,0));
+  let v1x,v1y;
+  if(Math.abs(sxy)>1e-9){v1x=l1-syy;v1y=sxy;} else {v1x=sxx>=syy?1:0;v1y=sxx>=syy?0:1;}
+  const nn=Math.hypot(v1x,v1y)||1; v1x/=nn; v1y/=nn;
+  const ev=l1/(l1+l2);
+
+  const R=5.6, W=w-pad.l-pad.r, H=h-pad.t-pad.b;
+  const sc=Math.min(W/(2*R), H/(2*R));
+  const X=v=>pad.l+W/2+(v-mx)*sc, Y=v=>pad.t+H/2-(v-my)*sc;
+  x.strokeStyle=css("--grid"); x.lineWidth=1;
+  x.beginPath();x.moveTo(pad.l,Y(my));x.lineTo(w-pad.r,Y(my));x.stroke();
+  x.beginPath();x.moveTo(X(mx),pad.t);x.lineTo(X(mx),pad.t+H);x.stroke();
+
+  PC.pts.forEach(p=>{
+    const hue=210+p.t*130;
+    x.fillStyle=`hsl(${hue},62%,52%)`; x.globalAlpha=.8;
+    x.beginPath();x.arc(X(p.x),Y(p.y),3.2,0,7);x.fill(); });
+  x.globalAlpha=1;
+
+  const L=Math.sqrt(l1)*2.1;
+  x.strokeStyle=css("--warm"); x.lineWidth=2.5;
+  x.beginPath();x.moveTo(X(mx-v1x*L),Y(my-v1y*L));x.lineTo(X(mx+v1x*L),Y(my+v1y*L));x.stroke();
+  x.fillStyle=css("--warm"); x.font="12px -apple-system,sans-serif"; x.textAlign="left";
+  x.fillText("PC1", X(mx+v1x*L)+5, Y(my+v1y*L));
+  const L2=Math.sqrt(Math.max(l2,0))*2.1;
+  x.strokeStyle=css("--muted"); x.lineWidth=1.5; x.setLineDash([4,4]);
+  x.beginPath();x.moveTo(X(mx+v1y*L2),Y(my-v1x*L2));x.lineTo(X(mx-v1y*L2),Y(my+v1x*L2));x.stroke();
+  x.setLineDash([]);
+
+  const sy=h-58;
+  x.fillStyle=css("--muted"); x.font="12px -apple-system,sans-serif";
+  x.fillText("the 1-D projection onto PC1 — colour shows where each point came from", pad.l, sy-14);
+  x.strokeStyle=css("--line"); x.lineWidth=1;
+  x.beginPath();x.moveTo(pad.l,sy+12);x.lineTo(w-pad.r,sy+12);x.stroke();
+  const proj=PC.pts.map(p=>({v:(p.x-mx)*v1x+(p.y-my)*v1y,t:p.t}));
+  const pmin=Math.min(...proj.map(p=>p.v)), pmax=Math.max(...proj.map(p=>p.v));
+  proj.forEach(p=>{
+    const px=pad.l+((p.v-pmin)/((pmax-pmin)||1))*(w-pad.l-pad.r);
+    x.fillStyle=`hsl(${210+p.t*130},62%,52%)`; x.globalAlpha=.75;
+    x.beginPath();x.arc(px,sy+12,3.6,0,7);x.fill(); });
+  x.globalAlpha=1;
+
+  let folds=0;
+  for(let i=1;i<proj.length;i++){
+    const near=proj.filter((q,j)=>j!==i && Math.abs(q.v-proj[i].v)<(pmax-pmin)*0.02
+      && Math.abs(q.t-proj[i].t)>0.45);
+    if(near.length) folds++; }
+  document.getElementById("pcOut").innerHTML =
+    `explained variance on PC1 = <b>${(ev*100).toFixed(1)}%</b> &nbsp; ` +
+    `&lambda;&#8321; = <b>${l1.toFixed(2)}</b>, &lambda;&#8322; = <b>${Math.max(l2,0).toFixed(2)}</b> &nbsp; ` +
+    `points landing on a far-away neighbour: <b>${folds}</b>`;
+  document.getElementById("pcVerdict").innerHTML = PC.mode===0
+    ? "Straight data. PC1 captures nearly everything and the projection preserves the ordering: the colour gradient stays clean left to right. This is PCA at its best."
+    : (folds>10
+      ? "<b>The shadow is folding.</b> Look at the strip: colours from opposite ends of the arc are sitting on top of each other. PCA found the direction of maximum variance correctly and still destroyed the structure, because variance was never the same thing as neighbourhood."
+      : "Curved data. Even where folding is mild, notice that two components are needed to describe something that is intrinsically one-dimensional. Straighten the hose and you would need one.");
+}
+document.getElementById("pcM").onclick=e=>{const b=e.target.closest("button");if(!b)return;
+  PC.mode=+b.dataset.m;[...e.currentTarget.children].forEach(o=>o.setAttribute("aria-pressed",o===b));
+  pcGen();pcDraw();};
+document.getElementById("pcN").oninput=e=>{document.getElementById("pcNV").textContent=(+e.target.value).toFixed(2);pcGen();pcDraw();};
+document.getElementById("pcNew").onclick=()=>{PC.seed=Math.floor(Math.random()*99999)+1;pcGen();pcDraw();};
+
+/* ============ 3. BOTTLENECK ============ */
+const BN={data:[],mean:[],comps:[],evals:[],seed:11,S:8};
+function bnRnd(){BN.seed=(BN.seed*1103515245+12345)&0x7fffffff;return BN.seed/0x7fffffff;}
+function bnGen(){
+  const S=BN.S, D=S*S, n=140; BN.data=[];
+  for(let i=0;i<n;i++){
+    const img=new Array(D).fill(0.05);
+    const kind=Math.floor(bnRnd()*3);
+    const r0=1+Math.floor(bnRnd()*(S-4)), c0=1+Math.floor(bnRnd()*(S-4));
+    if(kind===0){ for(let r=r0;r<r0+3;r++) img[r*S+c0]=0.9, img[r*S+c0+1]=0.75; }
+    else if(kind===1){ for(let c=c0;c<c0+3;c++) img[r0*S+c]=0.9, img[(r0+1)*S+c]=0.75; }
+    else { for(let k=0;k<3;k++) img[(r0+k)*S+c0+k]=0.9; }
+    for(let j=0;j<D;j++) img[j]+=(bnRnd()-0.5)*0.10;
+    BN.data.push(img);
+  }
+  const D2=D;
+  BN.mean=new Array(D2).fill(0);
+  BN.data.forEach(v=>v.forEach((x,j)=>BN.mean[j]+=x/n));
+  const C=Array.from({length:D2},()=>new Array(D2).fill(0));
+  BN.data.forEach(v=>{ const d=v.map((x,j)=>x-BN.mean[j]);
+    for(let a=0;a<D2;a++) for(let b=a;b<D2;b++){ const p=d[a]*d[b]/(n-1); C[a][b]+=p; if(a!==b) C[b][a]+=p; } });
+  const {vals,vecs}=jacobi(C,60);
+  const idx=vals.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]).map(p=>p[1]);
+  BN.evals=idx.map(i=>Math.max(vals[i],0));
+  BN.comps=idx.map(i=>vecs.map(row=>row[i]));
+}
+function jacobi(Ain,sweeps){
+  const n=Ain.length, A=Ain.map(r=>r.slice());
+  let V=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1:0));
+  for(let s=0;s<sweeps;s++){
+    let off=0; for(let p=0;p<n;p++)for(let q=p+1;q<n;q++) off+=A[p][q]*A[p][q];
+    if(off<1e-9) break;
+    for(let p=0;p<n;p++) for(let q=p+1;q<n;q++){
+      if(Math.abs(A[p][q])<1e-12) continue;
+      const theta=(A[q][q]-A[p][p])/(2*A[p][q]);
+      const t=Math.sign(theta||1)/(Math.abs(theta)+Math.sqrt(theta*theta+1));
+      const c=1/Math.sqrt(t*t+1), sn=t*c;
+      for(let k=0;k<n;k++){ const akp=A[k][p],akq=A[k][q];
+        A[k][p]=c*akp-sn*akq; A[k][q]=sn*akp+c*akq; }
+      for(let k=0;k<n;k++){ const apk=A[p][k],aqk=A[q][k];
+        A[p][k]=c*apk-sn*aqk; A[q][k]=sn*apk+c*aqk; }
+      for(let k=0;k<n;k++){ const vkp=V[k][p],vkq=V[k][q];
+        V[k][p]=c*vkp-sn*vkq; V[k][q]=sn*vkp+c*vkq; }
+    }
+  }
+  return {vals:A.map((r,i)=>r[i]), vecs:V};
+}
+function bnDraw(){
+  const c=document.getElementById("bnC"); if(!c.clientWidth||!BN.comps.length) return;
+  const {x,w,h}=fit(c); x.clearRect(0,0,w,h);
+  const k=+document.getElementById("bnK").value, S=BN.S, D=S*S;
+  const show=6, cell=Math.min(13,(w-60)/(show*S+show));
+  const gap=cell*2.2;
+  let err=0;
+  const recons=[];
+  BN.data.slice(0,show).forEach(v=>{
+    const d=v.map((a,j)=>a-BN.mean[j]);
+    const z=[]; for(let i=0;i<k;i++){ let s=0; for(let j=0;j<D;j++) s+=d[j]*BN.comps[i][j]; z.push(s); }
+    const r=BN.mean.slice();
+    for(let i=0;i<k;i++) for(let j=0;j<D;j++) r[j]+=z[i]*BN.comps[i][j];
+    recons.push(r);
+  });
+  BN.data.forEach(v=>{
+    const d=v.map((a,j)=>a-BN.mean[j]);
+    const z=[]; for(let i=0;i<k;i++){ let s=0; for(let j=0;j<D;j++) s+=d[j]*BN.comps[i][j]; z.push(s); }
+    const r=BN.mean.slice();
+    for(let i=0;i<k;i++) for(let j=0;j<D;j++) r[j]+=z[i]*BN.comps[i][j];
+    for(let j=0;j<D;j++) err+=(v[j]-r[j])**2;
+  });
+  err=Math.sqrt(err/(BN.data.length*D));
+  x.fillStyle=css("--muted"); x.font="12px -apple-system,sans-serif"; x.textAlign="left";
+  x.fillText("original", 8, 20); x.fillText(`reconstructed from ${k} number${k>1?"s":""}`, 8, 20+S*cell+gap);
+  const drawImg=(img,ox,oy)=>{ for(let r=0;r<S;r++)for(let cc=0;cc<S;cc++){
+      const v=Math.max(0,Math.min(1,img[r*S+cc])); const g=Math.round(255-v*205);
+      x.fillStyle=`rgb(${g},${g},${g})`; x.fillRect(ox+cc*cell,oy+r*cell,cell-0.5,cell-0.5); } };
+  BN.data.slice(0,show).forEach((v,i)=>drawImg(v, 8+i*(S*cell+cell*1.6), 28));
+  recons.forEach((v,i)=>drawImg(v, 8+i*(S*cell+cell*1.6), 28+S*cell+gap));
+
+  const by=28+2*S*cell+gap+26, bw=w-16, tot=BN.evals.reduce((a,b)=>a+b,0);
+  x.fillStyle=css("--muted"); x.fillText("variance captured by each component", 8, by-6);
+  const nb=Math.min(24,BN.evals.length), bwid=bw/nb;
+  const mxv=BN.evals[0]||1;
+  for(let i=0;i<nb;i++){
+    const hgt=(BN.evals[i]/mxv)*(h-by-16);
+    x.fillStyle=i<k?css("--accent"):css("--line");
+    x.fillRect(8+i*bwid, h-14-hgt, bwid-2, hgt); }
+  const cum=BN.evals.slice(0,k).reduce((a,b)=>a+b,0)/tot;
+  document.getElementById("bnOut").innerHTML =
+    `latent k = <b>${k}</b> of ${D} pixels &nbsp; compression <b>${(D/k).toFixed(1)}&times;</b> &nbsp; ` +
+    `variance retained <b>${(cum*100).toFixed(1)}%</b> &nbsp; reconstruction RMSE <b>${err.toFixed(4)}</b>`;
+  document.getElementById("bnVerdict").innerHTML =
+    k<=2 ? "Too tight. Every reconstruction is collapsing toward the same average shape, because there are not enough numbers to tell the shapes apart."
+    : cum>0.985 ? "Near perfect, and nearly pointless. At this width the bottleneck is barely constraining anything, and an autoencoder here would be drifting toward learning the identity function."
+    : "This is the useful regime: a large compression ratio with the shapes still recognizable. The network had to find structure because it was not given room to memorize.";
+}
+document.getElementById("bnK").oninput=e=>{document.getElementById("bnKV").textContent=e.target.value;bnDraw();};
+document.getElementById("bnNew").onclick=()=>{BN.seed=Math.floor(Math.random()*99999)+1;bnGen();bnDraw();};
+
+/* ============ 4. SPARSE CODING ============ */
+const SP={D:[],y:[],a:[],seed:3,M:64,K:12};
+function spRnd(){SP.seed=(SP.seed*1103515245+12345)&0x7fffffff;return SP.seed/0x7fffffff;}
+function spGen(){
+  const M=SP.M,K=SP.K; SP.D=[];
+  for(let k=0;k<K;k++){
+    const ctr=(k+0.5)*M/K, wdt=M/(K*1.1), f=1+(k%4)*0.9;
+    const atom=[];
+    for(let i=0;i<M;i++){
+      const d=(i-ctr)/wdt;
+      atom.push(Math.exp(-d*d)*Math.cos(2*Math.PI*f*d*0.5));
+    }
+    const nrm=Math.hypot(...atom)||1;
+    SP.D.push(atom.map(v=>v/nrm));
+  }
+  const pick=[Math.floor(spRnd()*K),Math.floor(spRnd()*K)];
+  const coef=[1.6+spRnd(), -1.2-spRnd()];
+  SP.y=new Array(M).fill(0);
+  pick.forEach((k,i)=>{ for(let j=0;j<M;j++) SP.y[j]+=coef[i]*SP.D[k][j]; });
+  for(let j=0;j<M;j++) SP.y[j]+=(spRnd()-0.5)*0.05;
+  SP.truth=pick;
+}
+function ista(lam){
+  const M=SP.M,K=SP.K; let a=new Array(K).fill(0);
+  const L=2.6;
+  for(let it=0;it<600;it++){
+    const r=new Array(M).fill(0);
+    for(let k=0;k<K;k++) if(a[k]) for(let j=0;j<M;j++) r[j]+=a[k]*SP.D[k][j];
+    const g=new Array(K).fill(0);
+    for(let k=0;k<K;k++){ let s=0; for(let j=0;j<M;j++) s+=(r[j]-SP.y[j])*SP.D[k][j]; g[k]=2*s; }
+    for(let k=0;k<K;k++){
+      const z=a[k]-g[k]/L;
+      a[k]=Math.sign(z)*Math.max(Math.abs(z)-lam/L,0); }
+  }
+  return a;
+}
+function spDraw(){
+  const c=document.getElementById("spC"); if(!c.clientWidth) return;
+  const {x,w,h}=fit(c); x.clearRect(0,0,w,h);
+  const lam=+document.getElementById("spL").value;
+  const a=ista(lam); SP.a=a;
+  const M=SP.M,K=SP.K;
+  const rec=new Array(M).fill(0);
+  for(let k=0;k<K;k++) if(a[k]) for(let j=0;j<M;j++) rec[j]+=a[k]*SP.D[k][j];
+
+  const topH=h*0.52, pad={l:36,r:14,t:24,b:10};
+  const all=[...SP.y,...rec]; const mn=Math.min(...all)-0.1, mx=Math.max(...all)+0.1;
+  const X=i=>pad.l+(i/(M-1))*(w-pad.l-pad.r);
+  const Y=v=>pad.t+(1-(v-mn)/((mx-mn)||1))*(topH-pad.t-pad.b);
+  x.strokeStyle=css("--grid"); x.beginPath();x.moveTo(pad.l,Y(0));x.lineTo(w-pad.r,Y(0));x.stroke();
+  x.fillStyle=css("--muted"); x.font="12px -apple-system,sans-serif"; x.textAlign="left";
+  x.fillText("signal (grey) and reconstruction (blue)", pad.l, 15);
+  x.strokeStyle=css("--muted"); x.lineWidth=2; x.globalAlpha=.6; x.beginPath();
+  SP.y.forEach((v,i)=>{i?x.lineTo(X(i),Y(v)):x.moveTo(X(i),Y(v));}); x.stroke(); x.globalAlpha=1;
+  x.strokeStyle=css("--accent"); x.lineWidth=2; x.beginPath();
+  rec.forEach((v,i)=>{i?x.lineTo(X(i),Y(v)):x.moveTo(X(i),Y(v));}); x.stroke();
+
+  const by=topH+22, bh=h-by-24, bwid=(w-pad.l-pad.r)/K;
+  x.fillStyle=css("--muted"); x.fillText("activation of each dictionary atom", pad.l, by-6);
+  const amax=Math.max(0.4,...a.map(Math.abs));
+  x.strokeStyle=css("--line"); x.beginPath();
+  x.moveTo(pad.l,by+bh/2);x.lineTo(w-pad.r,by+bh/2);x.stroke();
+  a.forEach((v,k)=>{
+    const hgt=(Math.abs(v)/amax)*(bh/2-4);
+    x.fillStyle = Math.abs(v)>1e-6 ? css("--warm") : css("--line");
+    if(Math.abs(v)<=1e-6){ x.fillRect(pad.l+k*bwid+2, by+bh/2-1, bwid-6, 2); }
+    else x.fillRect(pad.l+k*bwid+2, v>0?by+bh/2-hgt:by+bh/2, bwid-6, hgt);
+    x.fillStyle=css("--muted"); x.font="10px -apple-system,sans-serif"; x.textAlign="center";
+    x.fillText(String(k), pad.l+k*bwid+bwid/2-2, by+bh+12); });
+  x.textAlign="left";
+
+  const active=a.filter(v=>Math.abs(v)>1e-6).length;
+  let e=0; for(let j=0;j<M;j++) e+=(rec[j]-SP.y[j])**2;
+  const rmse=Math.sqrt(e/M);
+  document.getElementById("spOut").innerHTML =
+    `&lambda; = <b>${lam.toFixed(2)}</b> &nbsp; active atoms <b>${active}</b> of ${K} &nbsp; ` +
+    `reconstruction RMSE <b>${rmse.toFixed(4)}</b> &nbsp; signal was built from atoms <b>${SP.truth.join(" and ")}</b>`;
+  document.getElementById("spVerdict").innerHTML =
+    lam<0.02 ? "No sparsity pressure. Nearly every atom is doing a little work, reconstruction is excellent, and the representation tells you nothing you could name."
+    : active===0 ? "&lambda; has won outright. Every coefficient is exactly zero and the reconstruction is a flat line. Perfectly sparse, perfectly useless."
+    : active<=3 ? `<b>The useful regime.</b> ${active} atom${active>1?"s":""} carrying the signal, and you can point at them. This is where you could threshold an activation and read a label straight off it, with no classifier at all.`
+    : "Getting sparser, but still a mixture. Keep raising &lambda; and watch coefficients drop to exactly zero one at a time — not shrinking smoothly, which is what an L2 penalty would do.";
+}
+document.getElementById("spL").oninput=e=>{document.getElementById("spLV").textContent=(+e.target.value).toFixed(2);spDraw();};
+document.getElementById("spNew").onclick=()=>{SP.seed=Math.floor(Math.random()*99999)+1;spGen();spDraw();};
+
+/* boot */
+function drawAll(){ cvDraw(); pcDraw(); bnDraw(); spDraw(); }
+pcGen(); bnGen(); spGen(); drawAll();
+window.addEventListener("resize", drawAll);
+</script>
+</body>
+</html>
