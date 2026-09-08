@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-title" content="Feature Space">
 <meta name="theme-color" content="#2f5d8a" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#17181a" media="(prefers-color-scheme: dark)">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" crossorigin="anonymous">
 <title>Feature Space Playground</title>
 <style>
   :root {
@@ -67,6 +68,10 @@
     body { padding:0 13px 70px; } header { padding:22px 0 0; } h1 { font-size:21px; }
     .panel { padding:14px; } .tab { padding:9px 11px; font-size:14px; } .sl { min-width:100%; }
   }
+
+  .katex { font-size:1.02em; }
+  .eq .katex, .fx .katex { font-size:1.06em; }
+  .katex-display { margin:.4em 0; }
   [hidden] { display:none !important; }
 </style>
 </head>
@@ -623,6 +628,21 @@ document.getElementById("spNew").onclick=()=>{SP.seed=Math.floor(Math.random()*9
 function drawAll(){ cvDraw(); pcDraw(); bnDraw(); spDraw(); }
 pcGen(); bnGen(); spGen(); drawAll();
 window.addEventListener("resize", drawAll);
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+<script>
+window.KX = function (root) {
+  if (!window.renderMathInElement) return;
+  try {
+    renderMathInElement(root || document.body, {
+      delimiters: [{left:"\\[",right:"\\]",display:true},{left:"\\(",right:"\\)",display:false}],
+      throwOnError: false,
+      ignoredTags: ["script","noscript","style","textarea","pre","option"]
+    });
+  } catch (e) {}
+};
+window.addEventListener("load", function(){ KX(); });
 </script>
 </body>
 </html>

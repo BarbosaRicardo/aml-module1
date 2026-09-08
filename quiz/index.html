@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" crossorigin="anonymous">
 <title>Hyperparameter Optimization - Quiz</title>
 <style>
   :root {
@@ -118,6 +119,10 @@
   .readnext a { color:var(--good); text-decoration:underline; text-underline-offset:2px; }
   .readnext .doi a { font-size:12px; opacity:.8; }
   .readnext .hint { font-size:12px; color:var(--muted); margin-top:8px; }
+
+  .katex { font-size:1.02em; }
+  .eq .katex, .fx .katex { font-size:1.06em; }
+  .katex-display { margin:.4em 0; }
   [hidden] { display:none !important; }
 </style>
 </head>
@@ -1329,6 +1334,7 @@ function render() {
     card.appendChild(btn);
     form.appendChild(card);
   });
+  KX(form);
 }
 
 function normalize(s){ return s.toLowerCase().trim().replace(/\s+/g," ").replace(/[.?!]$/,""); }
@@ -1402,6 +1408,7 @@ function checkOne(qi) {
     `<div class="hint">Links open the file in the private repo. PDF page numbers are already converted, so <b>Koller book p. 16</b> opens at pdf page 53.</div>`;
   card.appendChild(rn);
 
+  KX(card);
   done[qi]=ok;
   if (Object.keys(done).length === order.length) showScore();
   return ok;
@@ -1438,6 +1445,21 @@ document.getElementById("modeSeg").onclick=e=>{const b=e.target.closest("button"
   mode=b.dataset.mode;paintChips();build();};
 
 readURL(); paintChips(); build();
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+<script>
+window.KX = function (root) {
+  if (!window.renderMathInElement) return;
+  try {
+    renderMathInElement(root || document.body, {
+      delimiters: [{left:"\\[",right:"\\]",display:true},{left:"\\(",right:"\\)",display:false}],
+      throwOnError: false,
+      ignoredTags: ["script","noscript","style","textarea","pre","option"]
+    });
+  } catch (e) {}
+};
+window.addEventListener("load", function(){ KX(); });
 </script>
 </body>
 </html>

@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" crossorigin="anonymous">
 <title>Optimization Playground</title>
 <style>
   :root {
@@ -84,6 +85,10 @@
   }
   .fx code { font-size:15px; }
   .src { color:var(--muted); font-size:13px; margin-top:18px; }
+
+  .katex { font-size:1.02em; }
+  .eq .katex, .fx .katex { font-size:1.06em; }
+  .katex-display { margin:.4em 0; }
   [hidden] { display:none !important; }
 </style>
 </head>
@@ -667,6 +672,21 @@ function drawAll(){ gdDraw(); psoDraw(); boDraw(); esDraw(); }
 gdReset(); psoReset(); boReset();
 drawAll();
 window.addEventListener("resize", drawAll);
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+<script>
+window.KX = function (root) {
+  if (!window.renderMathInElement) return;
+  try {
+    renderMathInElement(root || document.body, {
+      delimiters: [{left:"\\[",right:"\\]",display:true},{left:"\\(",right:"\\)",display:false}],
+      throwOnError: false,
+      ignoredTags: ["script","noscript","style","textarea","pre","option"]
+    });
+  } catch (e) {}
+};
+window.addEventListener("load", function(){ KX(); });
 </script>
 </body>
 </html>
