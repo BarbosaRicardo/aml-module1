@@ -101,6 +101,19 @@
     font-size:13px; color:var(--muted); margin-top:2px; word-break:break-all;
   }
   .permalink a { color:var(--accent); }
+
+  .checkbtn { font:inherit; font-size:13px; padding:6px 14px; border-radius:7px; margin-top:12px;
+    border:1px solid var(--line); background:var(--bg); color:var(--ink); cursor:pointer; }
+  .checkbtn:hover { border-color:var(--accent); }
+  .wrongbox { margin-top:12px; padding:12px 14px; border-left:3px solid var(--bad);
+    background:var(--bad-soft); border-radius:0 7px 7px 0; font-size:14px; }
+  .wrongbox .l { font-size:11px; text-transform:uppercase; letter-spacing:.07em;
+    color:var(--bad); font-weight:700; margin-bottom:5px; }
+  .wrongbox p { margin:0 0 9px; } .wrongbox p:last-child { margin:0; }
+  .readnext { margin-top:12px; padding:11px 14px; background:var(--good-soft);
+    border-left:3px solid var(--good); border-radius:0 7px 7px 0; font-size:14px; }
+  .readnext .l { font-size:11px; text-transform:uppercase; letter-spacing:.07em;
+    color:var(--good); font-weight:700; margin-bottom:5px; }
   [hidden] { display:none !important; }
 </style>
 </head>
@@ -161,7 +174,7 @@ const LEVELS = [
   { type:"many",
     q:"Which of these are listed as variants of gradient descent?",
     options:["Batch gradient descent, using the full dataset","Stochastic gradient descent, using one sample","Mini-batch gradient descent, using a subset","Swarm gradient descent, using a particle population"],
-    answer:[0,1,2],
+    wrong:{3:"there is no such thing. PSO is a separate, derivative-free family; it does not compute a gradient at all, so it cannot be a gradient descent variant. The three real variants differ only in how much data each update uses."}, answer:[0,1,2],
     why:"The three variants differ only in how much data each update uses. Particle swarm optimization is a separate, derivative-free method, not a gradient descent variant.",
     src:"Slides p. 5 and p. 12 &middot; Raschka ch. 2, Large-scale ML and stochastic gradient descent, pdf p. 76-81" },
   { type:"tf",
@@ -193,7 +206,7 @@ const LEVELS = [
   { type:"many",
     q:"Which search strategies for hyperparameter optimization are listed in the slides?",
     options:["Grid search, exhaustive over combinations","Random search, random samples","Bayesian optimization, modeling performance to guide the search","Gradient search, following the hyperparameter gradient"],
-    answer:[0,1,2],
+    wrong:{3:"hyperparameters generally have no usable gradient, which is the entire reason derivative-free methods exist. If you could differentiate through them you would not need grid, random or Bayesian search."}, answer:[0,1,2],
     why:"The first three are named, along with automated libraries such as Optuna, Hyperopt and scikit-learn's GridSearchCV. Hyperparameters generally have no usable gradient, which is the whole reason derivative-free methods are needed.",
     src:"Slides p. 7 &middot; Raschka ch. 6, Fine-tuning models via grid search, pdf p. 216-222" },
   { type:"one",
@@ -335,7 +348,7 @@ const LEVELS = [
       "It uses the second derivative instead of the first",
       "It searches a random direction rather than the gradient",
       "It requires the objective function to be convex"],
-    answer:[0],
+    wrong:{1:"second derivatives give you Newton-type methods, not steepest descent. Steepest descent still uses only the gradient; it just chooses how far to walk along it.", 2:"random search directions describe a different family entirely. Steepest descent follows the negative gradient.", 3:"convexity is not required. Steepest descent runs perfectly well on a non-convex surface; it just may land in a local minimum."}, answer:[0],
     why:"Steepest descent is the special case where &alpha;<sub>k</sub> = argmin<sub>&alpha;</sub> f(x<sub>k</sub> + &alpha;d<sub>k</sub>). In general gradient descent the step length can simply be fixed.",
     src:"Slides p. 9 and p. 11 &middot; Raschka ch. 2, pdf p. 68-70" },
   { type:"one",
@@ -396,7 +409,7 @@ const LEVELS = [
       "They eliminate the need for a loss function",
       "They guarantee convergence to a global minimum",
       "They are derivative-free methods"],
-    answer:[0],
+    wrong:{1:"nothing removes the loss function; it is what defines the problem.", 2:"none of the three is proven to converge globally. The transcript is explicit: they &ldquo;are not mathematically proven that they will always work,&rdquo; though all produce reasonable solutions.", 3:"all three are gradient-based. PSO and Bayesian optimization are the derivative-free ones."}, answer:[0],
     why:"Momentum accelerates convergence by smoothing updates; the adaptive family adjusts the rate per parameter. The lecture frames Adam as playing with the &alpha; term in the steepest descent formulation.",
     src:"Slides p. 6 &middot; Hyperparameter Optimization transcript &middot; Raschka ch. 14, The Adam optimizer sidebar, pdf p. 510" },
   { type:"tf",
@@ -549,7 +562,7 @@ const LEVELS = [
   questions: [
   { type:"tf",
     q:"A convex loss function is sufficient to make a hyperparameter optimization problem convex.",
-    answer:[1],
+    wrong:{0:"this is the most common misreading of convexity, and the lecture pre-empts it: a convex loss is &ldquo;required, but not enough.&rdquo; A constraint boundary can make part of the feasible region non-convex while the loss behaves perfectly. Assuming convexity you do not have means trusting a local optimum you have no right to trust."}, answer:[1],
     why:"False, and the lecture is emphatic: a convex loss is \"required, but not enough.\" The feasible region defined by the constraints must be convex too. A constraint boundary can make part of the region non-convex even with a well behaved loss.",
     src:"Hyperparameter Optimization transcript &middot; Raschka ch. 11, About convergence in neural networks, pdf p. 398" },
   { type:"one",
@@ -761,11 +774,11 @@ const LEVELS = [
   blurb: "Definitions and recall from the feature slides.",
   questions: [
   { type:"one", q:"What is the role of a convolution layer in a CNN?",
-    options:["Feature extraction","Classification","Regularization","Normalizing the input"], answer:[0],
+    options:["Feature extraction","Classification","Regularization","Normalizing the input"], wrong:{1:"classification happens in the dense layers at the end. The convolution layers build the representation those layers classify.", 2:"pooling and dropout regularize; convolution extracts.", 3:"normalization is a separate layer type, such as batch norm."}, answer:[0],
     why:"A filter slides across the data and feature maps are extracted through element-wise multiplication and summation. One filter creates one feature map, and a layer generally has many.",
     src:"Slides p. 5 &middot; Raschka ch. 14, pdf pp. 482-494" },
   { type:"one", q:"What distinguishes feature <em>selection</em> from feature <em>extraction</em>?",
-    options:["Selection keeps a subset of the original features; extraction builds new ones","Selection is supervised; extraction is unsupervised","Selection works on images; extraction on text","There is no difference"], answer:[0],
+    options:["Selection keeps a subset of the original features; extraction builds new ones","Selection is supervised; extraction is unsupervised","Selection works on images; extraction on text","There is no difference"], wrong:{1:"both come in supervised and unsupervised forms. LDA is supervised extraction; PCA is unsupervised extraction; random-forest importance is supervised selection.", 2:"neither is tied to a modality. Both apply to images, text and tabular data alike.", 3:"the distinction is a stated module learning objective. Selection preserves interpretability because the surviving columns are still the original measurements; extraction sacrifices that for compactness."}, answer:[0],
     why:"Selection discards columns and keeps the survivors interpretable. Extraction transforms the data into a new space, as PCA and autoencoders do, so the new axes are combinations rather than originals.",
     src:"Slides p. 3 &middot; Raschka ch. 4 (selection) vs ch. 5 (extraction)" },
   { type:"one", q:"What is a latent space?",
@@ -789,7 +802,7 @@ const LEVELS = [
     why:"Subtract each feature's mean, then form the covariance matrix &Sigma; = X<sub>c</sub><sup>T</sup>X<sub>c</sub>/(n&minus;1), then do the eigendecomposition, then project.",
     src:"Slides p. 13 &middot; Raschka ch. 5, pdf pp. 173-175" },
   { type:"tf", q:"An autoencoder requires labelled training data.",
-    answer:[1],
+    wrong:{0:"choosing True misses what makes autoencoders useful. The target <em>is</em> the input, so the label comes free. That is why they can be trained on unlimited unlabelled data and why they underpin self-supervised pretraining."}, answer:[1],
     why:"False. It is explicitly a way to represent input data <em>without</em> labels, trained to reconstruct its own input. The slides call it a regression task that models an identity function.",
     src:"Slides p. 17" },
   { type:"one", q:"In Tf-Idf, what does the idf term correct for?",
@@ -910,7 +923,7 @@ const LEVELS = [
     why:"Solving for coefficients with the bases fixed is L1-regularized least squares; solving for bases with coefficients fixed is L2-constrained least squares. The joint problem is not convex, but each half is, which is what makes alternating minimization work.",
     src:"Lee et al., abstract and &sect;2" },
   { type:"one", q:"Which algorithm do Lee et al. propose for the coefficient-learning step?",
-    options:["Feature-sign search","Gradient descent","K-SVD","Conjugate gradient"], answer:[0],
+    options:["Feature-sign search","Gradient descent","K-SVD","Conjugate gradient"], wrong:{1:"gradient descent is what they compare <em>against</em>, and it is the method that fails on the basis step.", 2:"K-SVD is a dictionary-learning method, so it belongs to the other subproblem.", 3:"conjugate gradient appears in their table only for the epsilon-L1 sparsity function, not as their proposal."}, answer:[0],
     why:"It guesses the signs of the coefficients, which reduces the problem to an unconstrained quadratic program solvable analytically, then systematically refines the guess when wrong.",
     src:"Lee et al., &sect;3 and Algorithm 1" },
   { type:"one", q:"Which algorithm do Lee et al. use for the basis-learning step?",
@@ -962,7 +975,7 @@ const LEVELS = [
     why:"One filter is one pattern detector. Stacking layers then lets later filters combine earlier ones, building the feature hierarchy Raschka describes.",
     src:"Slides p. 5 &middot; Raschka ch. 14, pdf pp. 483-485" },
   { type:"many", q:"Which are ways of assessing or performing feature selection in Raschka?",
-    options:["L1 regularization producing sparse weights","Sequential feature selection algorithms","Random forest feature importance","Principal component analysis"], answer:[0,1,2],
+    options:["L1 regularization producing sparse weights","Sequential feature selection algorithms","Random forest feature importance","Principal component analysis"], wrong:{3:"PCA is feature <b>extraction</b>, not selection. It builds new axes as linear mixtures of every original feature rather than choosing among them, which is why a principal component has no domain meaning. This is the exact distinction the module opens with."}, answer:[0,1,2],
     why:"PCA is feature <em>extraction</em>: it builds new axes rather than choosing among existing ones. The distinction is a module learning objective, and this is the standard trap.",
     src:"Raschka ch. 4, pdf pp. 153-168 vs ch. 5, pdf p. 170" },
   { type:"one", q:"Why does the slide deck call an autoencoder a regression task?",
@@ -986,7 +999,7 @@ const LEVELS = [
     why:"The slides' example contrasts 'news' in a news corpus against 'alien' or 'inflation'. Without idf, the corpus-wide vocabulary drowns out what makes a document distinctive.",
     src:"Slides p. 16 &middot; Raschka ch. 8, pdf pp. 283-285" },
   { type:"one", q:"Why does the lecture say a latent space found by PCA is <em>not</em> a manifold?",
-    options:["PCA is inherently a linear transformation, while manifolds describe non-linear structure","PCA discards too many dimensions","PCA requires labels","PCA cannot be computed for image data"], answer:[0],
+    options:["PCA is inherently a linear transformation, while manifolds describe non-linear structure","PCA discards too many dimensions","PCA requires labels","PCA cannot be computed for image data"], wrong:{1:"the number of discarded dimensions is not the issue; a manifold method can reduce just as aggressively. The issue is linearity.", 2:"PCA is unsupervised. It never sees a label.", 3:"PCA is routinely applied to images. It just cannot follow curved structure in them."}, answer:[0],
     why:"PCA finds a global linear subspace of orthogonal components maximizing variance. Real data in images and language often lies on curved manifolds, and PCA \"cannot represent non-linear variations.\" This is the sharpest distinction in the module.",
     src:"Feature Selection and Extraction transcript &middot; Slides pp. 10-12" },
   { type:"one", q:"How does the lecture contrast latent space with PCA regarding similar data points?",
@@ -994,7 +1007,7 @@ const LEVELS = [
     why:"The lecture calls finding the manifold \"actually clustering, but not clustering exactly,\" since it reduces dimensions on the way. PCA optimizes variance and is indifferent to whether neighbours stay neighbours.",
     src:"Feature Selection and Extraction transcript" },
   { type:"one", q:"What does the lecture say the word <em>variational</em> refers to in a variational autoencoder?",
-    options:["The latent space is variational: each dimension is a learned distribution, not a single value","It is a variation on the standard autoencoder architecture","The variance of the reconstruction loss","The varying number of layers"], answer:[0],
+    options:["The latent space is variational: each dimension is a learned distribution, not a single value","It is a variation on the standard autoencoder architecture","The variance of the reconstruction loss","The varying number of layers"], wrong:{1:"this is the natural reading and the lecture explicitly corrects it: the term is not about varying the architecture.", 2:"the loss variance is not what the name refers to.", 3:"layer count is unrelated. The latent <em>distribution</em> is what varies."}, answer:[0],
     why:"The lecture explicitly corrects the obvious reading. Each latent position becomes a normal distribution with a mean and a standard deviation, which in effect doubles the stored latent parameters.",
     src:"Feature Selection and Extraction transcript &middot; Slides p. 20" },
   { type:"one", q:"According to the lecture, what does minimizing KL divergence do to the latent space?",
@@ -1012,7 +1025,7 @@ const LEVELS = [
   blurb: "The details from the paper and the fine print on the slides.",
   questions: [
   { type:"tf", q:"The joint sparse coding problem, optimizing over both the dictionary and the activations at once, is convex.",
-    answer:[1],
+    wrong:{0:"choosing True hides the whole reason the paper exists. If the joint problem were convex you could solve it directly and Lee et al. would have nothing to contribute. It is convex in each variable <em>separately</em>, which is what licenses alternating minimization and also why runs need not converge to the same answer twice."}, answer:[1],
     why:"False, and this is the crux of Lee et al. The joint problem is <em>not</em> convex, but it is convex in each variable with the other held fixed. That is precisely why the method alternates instead of solving directly.",
     src:"Lee et al., abstract and &sect;2" },
   { type:"one", q:"In Lee et al.'s generative model, how is the reconstruction error assumed to be distributed?",
@@ -1032,7 +1045,7 @@ const LEVELS = [
     why:"2.16s for feature-sign against 387.90s for CVX, with LARS at 3.62s and Chen et al. at 88.61s. Two orders of magnitude, which is the difference between a method being usable and being a paper.",
     src:"Lee et al., Table 1" },
   { type:"tf", q:"Lee et al. report that gradient descent for basis learning eventually produced reasonable bases, just more slowly.",
-    answer:[1],
+    wrong:{0:"choosing True understates a striking result. It was not slower; it failed. The Lagrange dual learned 1,024 bases in about two hours while gradient descent produced nothing usable in 24. Picking the wrong solver for a subproblem can make a method look impossible rather than slow."}, answer:[1],
     why:"False, and the failure is stark. The Lagrange dual learned 1,024 bases in about 2 hours, while gradient descent \"did not result in any reasonable bases even after running for 24 hours.\" Not slower &mdash; broken.",
     src:"Lee et al., &sect;5.3" },
   { type:"one", q:"Which neuroscience phenomena did Lee et al. replicate with their learned bases?",
@@ -1056,7 +1069,7 @@ const LEVELS = [
     why:"This is Raschka's feature hierarchy: early layers find edges, later layers find shapes and then objects. It is also why explainability is hard, since a deep feature has no simple description.",
     src:"Slides p. 4 &middot; Raschka ch. 14, Understanding CNNs and feature hierarchies, pdf pp. 483-485" },
   { type:"tf", q:"Sparse coding appears in the Raschka textbook as a named topic.",
-    answer:[1],
+    wrong:{0:"choosing True would send you hunting through 775 pages for something that is not there. Knowing which topics have no textbook backup tells you where the slides and the assigned paper are your only defence on an exam."}, answer:[1],
     why:"False. The phrase occurs zero times across all 775 pages, despite four slides, a notebook section and an assigned paper. For sparse coding, the slides and Lee et al. are your only sources.",
     src:"Verified across Raschka; Slides pp. 22-26 &middot; Lee et al." },
   { type:"one", q:"The slides connect sparse coding to which modern architectures?",
@@ -1143,166 +1156,202 @@ const form = document.getElementById("quiz");
 const scoreBox = document.getElementById("score");
 const TAG = { one:"one answer", many:"select all", tf:"true / false", fill:"fill in" };
 
-let sel = [], mode = "sample", POOL = [], order = [], graded = false;
+let sel = [], mode = "sample", POOL = [], order = [], done = {};
 
 function readURL() {
   const q = new URLSearchParams(location.search);
   const raw = (q.get("m") || q.get("module") || "").trim();
-  if (raw) {
-    sel = raw.split(/[,+ ]+/).map(v => parseInt(v, 10) - 1)
-             .filter(i => Number.isInteger(i) && i >= 0 && i < BANKS.length);
-  }
+  if (raw) sel = raw.split(/[,+ ]+/).map(v => parseInt(v,10)-1)
+                    .filter(i => Number.isInteger(i) && i>=0 && i<BANKS.length);
   if (!sel.length) sel = [0];
   mode = q.get("mode") === "all" ? "all" : "sample";
 }
 function syncURL() {
   const q = new URLSearchParams();
-  q.set("m", sel.map(i => i + 1).join(","));
-  q.set("mode", mode);
+  q.set("m", sel.map(i=>i+1).join(",")); q.set("mode", mode);
   const url = location.pathname + "?" + q.toString();
   history.replaceState(null, "", url);
   document.getElementById("permalink").innerHTML =
     `Link to this set: <a href="${url}">${location.origin + url}</a>`;
 }
-function drawChips() {
-  document.getElementById("bankPick").innerHTML = BANKS.map((b, i) =>
-    `<button class="chip" data-i="${i}" aria-pressed="${sel.includes(i)}">${b.name.split(" - ")[0]}</button>`
-  ).join("");
-  document.querySelectorAll(".chip").forEach(c => c.onclick = () => {
-    const i = +c.dataset.i;
-    if (sel.includes(i)) { if (sel.length > 1) sel = sel.filter(v => v !== i); }
-    else sel = [...sel, i].sort((a, b) => a - b);
-    drawChips(); build();
+function chipRow(el, items, cur, cb) {
+  const lbl = el.querySelector(".lbl"); el.innerHTML = ""; if (lbl) el.appendChild(lbl);
+  items.forEach(([v,label]) => {
+    const b = document.createElement("button");
+    b.className="chip"; b.dataset.v=v;
+    b.setAttribute("aria-pressed", String(Array.isArray(cur) ? cur.includes(v) : cur===v));
+    b.textContent=label; b.onclick=()=>cb(v); el.appendChild(b);
   });
-  document.querySelectorAll("#modeSeg button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === mode));
 }
-function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function paintChips() {
+  chipRow(document.getElementById("bankPick"),
+    BANKS.map((b,i)=>[i, b.name.replace(/ - .*/,"")]), sel,
+    i => { if (sel.includes(i)) { if (sel.length>1) sel=sel.filter(v=>v!==i); }
+           else sel=[...sel,i].sort((a,b)=>a-b); paintChips(); build(); });
+  document.querySelectorAll("#modeSeg button").forEach(b =>
+    b.setAttribute("aria-pressed", b.dataset.mode === mode));
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
 function build() {
   POOL = [];
-  sel.forEach(i => BANKS[i].questions.forEach(q => POOL.push({ ...q, bank: BANKS[i].name })));
-  order = POOL.map((_, i) => i);
+  sel.forEach(i => BANKS[i].questions.forEach(q => POOL.push({...q, bank: BANKS[i].name})));
+  order = POOL.map((_,i)=>i);
   if (mode === "sample") order = shuffle(order).slice(0, Math.min(10, order.length));
   syncURL();
-  document.getElementById("poolInfo").textContent =
-    mode === "sample"
-      ? `${order.length} drawn at random from a bank of ${POOL.length}`
-      : `all ${POOL.length} questions`;
+  document.getElementById("poolInfo").textContent = mode === "sample"
+    ? `${order.length} drawn at random from a bank of ${POOL.length}`
+    : `all ${POOL.length} questions`;
   render();
 }
 
 function render() {
-  graded = false;
+  done = {};
   scoreBox.hidden = true;
   document.getElementById("retry").hidden = true;
   document.getElementById("submit").disabled = false;
   document.getElementById("submit2").disabled = false;
   form.innerHTML = "";
   const multi = sel.length > 1;
-
   order.forEach((qi, n) => {
     const q = POOL[qi];
     const card = document.createElement("div");
-    card.className = "q"; card.dataset.qi = qi;
+    card.className="q"; card.dataset.qi=qi;
     const head = document.createElement("div");
-    head.className = "qhead";
-    head.innerHTML = `<span class="qnum">Question ${n + 1}</span>` +
-      (multi ? `<span class="bankTag">${q.bank.split(" - ")[0]}</span>` : "") +
+    head.className="qhead";
+    head.innerHTML = `<span class="qnum">Question ${n+1}</span>` +
+      (multi ? `<span class="bankTag">${q.bank.replace(/ - .*/,"")}</span>` : "") +
       `<span class="tag">${TAG[q.type]}</span>`;
     card.appendChild(head);
     const text = document.createElement("p");
-    text.className = "qtext"; text.innerHTML = q.q;
-    card.appendChild(text);
-
+    text.className="qtext"; text.innerHTML=q.q; card.appendChild(text);
     if (q.type === "fill") {
-      const inp = document.createElement("input");
-      inp.type = "text"; inp.placeholder = "your answer"; inp.name = "q" + qi;
-      card.appendChild(inp);
+      const inp=document.createElement("input");
+      inp.type="text"; inp.placeholder="your answer"; inp.name="q"+qi; card.appendChild(inp);
     } else {
-      const opts = q.type === "tf" ? ["True", "False"] : q.options;
-      const kind = q.type === "many" ? "checkbox" : "radio";
-      opts.forEach((opt, oi) => {
-        const lab = document.createElement("label");
-        lab.className = "opt"; lab.dataset.oi = oi;
-        lab.innerHTML = `<input type="${kind}" name="q${qi}" value="${oi}"><span>${opt}</span>`;
+      const opts = q.type==="tf" ? ["True","False"] : q.options;
+      const kind = q.type==="many" ? "checkbox" : "radio";
+      opts.forEach((opt,oi)=>{
+        const lab=document.createElement("label");
+        lab.className="opt"; lab.dataset.oi=oi;
+        lab.innerHTML=`<input type="${kind}" name="q${qi}" value="${oi}"><span>${opt}</span>`;
         card.appendChild(lab);
       });
     }
+    const btn = document.createElement("button");
+    btn.className="checkbtn"; btn.type="button"; btn.textContent="Check this answer";
+    btn.onclick = () => checkOne(qi);
+    card.appendChild(btn);
     form.appendChild(card);
   });
 }
 
-function normalize(s) { return s.toLowerCase().trim().replace(/\s+/g, " ").replace(/[.?!]$/, ""); }
+function normalize(s){ return s.toLowerCase().trim().replace(/\s+/g," ").replace(/[.?!]$/,""); }
+const optText = (q,i) => q.type==="tf" ? ["True","False"][i] : q.options[i];
 
-function grade() {
-  if (graded) return;
-  graded = true;
-  let correct = 0;
-  order.forEach(qi => {
-    const q = POOL[qi];
-    const card = form.querySelector(`[data-qi="${qi}"]`);
-    let ok = false;
-    if (q.type === "fill") {
-      const inp = card.querySelector("input[type=text]");
-      const given = normalize(inp.value);
-      ok = q.answer.some(a => { const n = normalize(a);
-        return given === n || given === n + " theory" || given === n + " space" || given === n + " parameter"; });
-      inp.disabled = true;
-      inp.style.borderColor = ok ? "var(--good)" : "var(--bad)";
-      if (!ok) { const p = document.createElement("p"); p.className = "src";
-        p.innerHTML = `Correct answer: <b>${q.answer[0]}</b>`; inp.after(p); }
-    } else {
-      const picked = [...card.querySelectorAll("input:checked")].map(i => +i.value);
-      ok = picked.length === q.answer.length && picked.every(p => q.answer.includes(p));
-      card.querySelectorAll("label.opt").forEach(lab => {
-        const oi = +lab.dataset.oi;
-        lab.querySelector("input").disabled = true;
-        const isAns = q.answer.includes(oi), chosen = picked.includes(oi);
-        if (isAns) { lab.classList.add("correct");
-          const m = document.createElement("span"); m.className = "mark g";
-          m.textContent = chosen ? "correct" : "correct answer"; lab.appendChild(m); }
-        else if (chosen) { lab.classList.add("wrong");
-          const m = document.createElement("span"); m.className = "mark b";
-          m.textContent = "your answer"; lab.appendChild(m); }
-      });
+function checkOne(qi) {
+  if (done[qi] !== undefined) return done[qi];
+  const q = POOL[qi];
+  const card = form.querySelector(`[data-qi="${qi}"]`);
+  let ok=false, picked=[];
+
+  if (q.type === "fill") {
+    const inp = card.querySelector("input[type=text]");
+    const given = normalize(inp.value);
+    ok = q.answer.some(a=>{const n=normalize(a);
+      return given===n || given===n+" theory" || given===n+" space" || given===n+" parameter";});
+    inp.disabled = true;
+    inp.style.borderColor = ok ? "var(--good)" : "var(--bad)";
+  } else {
+    picked = [...card.querySelectorAll("input:checked")].map(i=>+i.value);
+    ok = picked.length===q.answer.length && picked.every(p=>q.answer.includes(p));
+    card.querySelectorAll("label.opt").forEach(lab=>{
+      const oi=+lab.dataset.oi;
+      lab.querySelector("input").disabled=true;
+      const isAns=q.answer.includes(oi), chosen=picked.includes(oi);
+      if (isAns) { lab.classList.add("correct");
+        const m=document.createElement("span"); m.className="mark g";
+        m.textContent = chosen ? "correct" : "correct answer"; lab.appendChild(m); }
+      else if (chosen) { lab.classList.add("wrong");
+        const m=document.createElement("span"); m.className="mark b";
+        m.textContent="your answer"; lab.appendChild(m); }
+    });
+  }
+
+  card.querySelector(".checkbtn")?.remove();
+
+  const why=document.createElement("div");
+  why.className="why";
+  why.innerHTML = `<b>${ok ? "Correct" : "Not quite"}</b>${q.why}`;
+  card.appendChild(why);
+
+  if (!ok) {
+    const chosen = q.type==="fill"
+      ? [] : picked.filter(i => !q.answer.includes(i));
+    const missed = q.type==="fill"
+      ? [] : q.answer.filter(i => !picked.includes(i));
+    let html = "";
+    chosen.forEach(i => {
+      const custom = q.wrong && q.wrong[i];
+      html += `<p><b>&ldquo;${optText(q,i)}&rdquo;</b> &mdash; ` +
+        (custom || `not the answer here. The explanation above gives the one that is; the reading below settles it.`) + `</p>`;
+    });
+    if (q.type==="fill" && !ok) {
+      html += `<p>The answer is <b>${q.answer[0]}</b>. ${(q.wrong && q.wrong.fill) || "Check the spelling and note that only the missing word goes in the box."}</p>`;
     }
-    if (ok) correct++;
-    const why = document.createElement("div");
-    why.className = "why";
-    why.innerHTML = `<b>${ok ? "Correct" : "Not quite"}</b>${q.why}<div class="src">${q.src}</div>`;
-    card.appendChild(why);
-  });
+    if (missed.length) {
+      html += `<p><b>You missed:</b> ` + missed.map(i=>`&ldquo;${optText(q,i)}&rdquo;`).join(", ") +
+        `. On a select-all, leaving a correct option out costs the same as adding a wrong one.</p>`;
+    }
+    if (html) {
+      const wb=document.createElement("div");
+      wb.className="wrongbox";
+      wb.innerHTML=`<div class="l">Why your choice does not work</div>${html}`;
+      card.appendChild(wb);
+    }
+  }
 
-  const total = order.length, pct = Math.round(correct / total * 100);
-  scoreBox.hidden = false;
-  scoreBox.innerHTML = `
-    <h2>${sel.map(i => BANKS[i].name.split(" - ")[0]).join(" + ")}</h2>
+  const rn=document.createElement("div");
+  rn.className="readnext";
+  rn.innerHTML=`<div class="l">Read next</div>${q.src}`;
+  card.appendChild(rn);
+
+  done[qi]=ok;
+  if (Object.keys(done).length === order.length) showScore();
+  return ok;
+}
+
+function showScore() {
+  const total=order.length;
+  const correct=order.filter(qi=>done[qi]).length;
+  const pct=Math.round(correct/total*100);
+  scoreBox.hidden=false;
+  scoreBox.innerHTML=`
+    <h2>${sel.map(i=>BANKS[i].name.replace(/ - .*/,"")).join(" + ")}</h2>
     <div class="pct">${correct} / ${total} &middot; ${pct}%</div>
     <div class="bar"><div></div></div>
     <div class="breakdown">${
-      pct === 100 ? "Every one. Draw another set to be sure it wasn't the luck of the shuffle."
-      : pct >= 80 ? "Solid. Read back over the ones you missed."
-      : pct >= 50 ? "Worth another pass through the notes before the next draw."
-      : "Start with the source material, then come back."
-    }</div>`;
-  requestAnimationFrame(() => { scoreBox.querySelector(".bar > div").style.width = pct + "%"; });
-  document.getElementById("retry").hidden = false;
-  document.getElementById("submit").disabled = true;
-  document.getElementById("submit2").disabled = true;
-  scoreBox.scrollIntoView({ behavior: "smooth", block: "start" });
+      pct===100 ? "Every one. Draw another set to be sure it wasn't the shuffle."
+      : pct>=80 ? "Solid. Read the Read next line on anything you missed."
+      : pct>=50 ? "Worth another pass through the sources before the next draw."
+      : "Start with the source material, then come back."}</div>`;
+  requestAnimationFrame(()=>{scoreBox.querySelector(".bar > div").style.width=pct+"%";});
+  document.getElementById("retry").hidden=false;
+  document.getElementById("submit").disabled=true;
+  document.getElementById("submit2").disabled=true;
 }
 
-document.getElementById("submit").onclick = grade;
-document.getElementById("submit2").onclick = grade;
-document.getElementById("retry").onclick = () => { render(); window.scrollTo({ top: 0, behavior: "smooth" }); };
-document.getElementById("newSet").onclick = () => { build(); window.scrollTo({ top: 0, behavior: "smooth" }); };
-document.getElementById("modeSeg").onclick = e => {
-  const b = e.target.closest("button"); if (!b) return;
-  mode = b.dataset.mode; drawChips(); build();
-};
+function gradeAll(){ order.forEach(qi=>checkOne(qi));
+  scoreBox.scrollIntoView({behavior:"smooth",block:"start"}); }
 
-readURL(); drawChips(); build();
+document.getElementById("submit").onclick=gradeAll;
+document.getElementById("submit2").onclick=gradeAll;
+document.getElementById("retry").onclick=()=>{render();window.scrollTo({top:0,behavior:"smooth"});};
+document.getElementById("newSet").onclick=()=>{build();window.scrollTo({top:0,behavior:"smooth"});};
+document.getElementById("modeSeg").onclick=e=>{const b=e.target.closest("button");if(!b)return;
+  mode=b.dataset.mode;paintChips();build();};
 
+readURL(); paintChips(); build();
 </script>
 </body>
 </html>
